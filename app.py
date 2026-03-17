@@ -286,7 +286,7 @@ NAME_MAP = {p["ticker"]: p["name"] for p in PLAYERS}
 ETF_MAP = {p["ticker"]: p.get("etf", "") for p in PLAYERS}
 
 # --- Sidebar ---
-st.sidebar.title("League Office")
+st.sidebar.title("Trading Windows")
 
 default_start = datetime.date(2026, 3, 6)
 default_end = datetime.date.today()
@@ -295,7 +295,7 @@ start_date = st.sidebar.date_input("Start Date", value=default_start)
 end_date = st.sidebar.date_input("End Date", value=default_end)
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("Transfer Window")
+st.sidebar.subheader("Add/Remove Tickers")
 new_ticker = st.sidebar.text_input("Add a ticker symbol", placeholder="e.g. TSLA")
 if st.sidebar.button("Add Ticker") and new_ticker:
     ticker_upper = new_ticker.strip().upper()
