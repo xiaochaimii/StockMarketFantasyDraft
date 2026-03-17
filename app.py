@@ -8,6 +8,15 @@ import plotly.graph_objects as go
 # --- Config ---
 st.set_page_config(page_title="Stock Market Fantasy Draft", layout="wide")
 
+st.markdown("""
+<style>
+* { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji' !important; }
+table td, table th { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji' !important; }
+table.leaderboard { width: 100% !important; }
+table.leaderboard td, table.leaderboard th { padding: 8px 12px; text-align: left; }
+</style>
+""", unsafe_allow_html=True)
+
 with open("players.json") as f:
     config = json.load(f)
 
@@ -15,6 +24,7 @@ INVESTMENT = config["investment_amount"]
 PLAYERS = config["players"]
 TICKERS = [p["ticker"] for p in PLAYERS]
 NAME_MAP = {p["ticker"]: p["name"] for p in PLAYERS}
+ETF_MAP = {p["ticker"]: p.get("etf", "") for p in PLAYERS}
 
 # --- Sidebar ---
 st.sidebar.title("Fantasy Draft Settings")
@@ -34,7 +44,7 @@ if st.sidebar.button("Add Ticker") and new_ticker:
     if ticker_upper in existing:
         st.sidebar.warning(f"{ticker_upper} is already in the list.")
     else:
-        config["players"].append({"name": ticker_upper, "ticker": ticker_upper})
+        config["players"].append({"etf": "", "name": ticker_upper, "ticker": ticker_upper})
         with open("players.json", "w") as f:
             json.dump(config, f, indent=2)
         st.sidebar.success(f"Added {ticker_upper}!")
@@ -52,11 +62,12 @@ if st.sidebar.button("Remove Ticker") and remove_ticker:
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Stocks Picked")
-roster_search = st.sidebar.text_input("Search stocks", placeholder="Filter by ticker")
+roster_search = st.sidebar.text_input("Search stocks", placeholder="Filter by name or ticker")
 for p in sorted(PLAYERS, key=lambda x: x['ticker'].upper()):
-    if roster_search and roster_search.upper() not in p['ticker'].upper():
+    if roster_search and roster_search.upper() not in p['ticker'].upper() and roster_search.upper() not in p['name'].upper():
         continue
-    st.sidebar.write(p['ticker'])
+    etf_label = f"[{p.get('etf', '')}] " if p.get('etf') else ""
+    st.sidebar.write(f"{etf_label}**{p['ticker']}** — {p['name']}")
 
 # --- Main ---
 st.title("Stock Market Fantasy Draft Tracker")
@@ -78,7 +89,7 @@ def fetch_returns(tickers, start, end):
     )
 
     if data.empty:
-        return None, None
+        return None, None, None
 
     close = data["Close"]
 
@@ -91,9 +102,10 @@ def fetch_returns(tickers, start, end):
 
     # Compute cumulative % return from the first available price
     start_prices = close.iloc[0]
+    end_prices = close.iloc[-1]
     pct_return = (close / start_prices - 1) * 100
 
-    return pct_return, start_prices
+    return pct_return, start_prices, end_prices
 
 
 @st.cache_data(ttl=300)
@@ -117,7 +129,7 @@ def fetch_dividends(tickers, start, end):
 
 
 try:
-    returns, start_prices = fetch_returns(TICKERS, start_date, end_date)
+    returns, start_prices, end_prices = fetch_returns(TICKERS, start_date, end_date)
 except Exception as e:
     st.error(f"Failed to fetch stock data: {e}")
     st.stop()
@@ -147,6 +159,32 @@ if not valid_tickers:
 final_returns = returns[valid_tickers].iloc[-1].sort_values(ascending=False)
 top10_tickers = final_returns.head(10).index.tolist()
 bottom10_tickers = final_returns.tail(10).index.tolist()
+
+# --- ETF Winner ---
+ETF_EMOJI = {"UNCL": "👨‍🦳", "ANTY": "👩🏻", "KIDZ": "👶🏻"}
+etf_sums = {}
+etf_counts = {}
+for ticker in valid_tickers:
+    etf = ETF_MAP.get(ticker, "")
+    if etf:
+        etf_sums[etf] = etf_sums.get(etf, 0) + final_returns[ticker]
+        etf_counts[etf] = etf_counts.get(etf, 0) + 1
+etf_avgs = {etf: etf_sums[etf] / etf_counts[etf] for etf in etf_sums}
+etf_ranked = sorted(etf_avgs.items(), key=lambda x: x[1], reverse=True)
+parts = []
+for i, (etf, total) in enumerate(etf_ranked):
+    if i == 0:
+        label = "🏆"
+    elif i == len(etf_ranked) - 1:
+        label = "📉"
+    else:
+        label = "🔹"
+    parts.append(f"{label} {ETF_EMOJI.get(etf, '')} {etf} ({total:+.2f}%)")
+best_ticker = final_returns.index[0]
+worst_ticker = final_returns.index[-1]
+st.markdown(f"### <span style='font-family: Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif'>🏆</span> Highest Performing: {ETF_EMOJI.get(ETF_MAP.get(best_ticker, ''), '')} <span style='color:green'>{NAME_MAP[best_ticker]} ({best_ticker}) {final_returns[best_ticker]:+.2f}%</span> &nbsp;&nbsp; <span style='font-family: Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif'>📉</span> Lowest Performing: {ETF_EMOJI.get(ETF_MAP.get(worst_ticker, ''), '')} <span style='color:red'>{NAME_MAP[worst_ticker]} ({worst_ticker}) {final_returns[worst_ticker]:+.2f}%</span>", unsafe_allow_html=True)
+
+st.markdown("### " + " &nbsp;&nbsp; ".join(parts))
 
 # --- Plotly Line Chart: Top 10 Winners ---
 fig_top = go.Figure()
@@ -205,6 +243,9 @@ col2.plotly_chart(fig_bottom, use_container_width=True)
 # --- Leaderboard ---
 st.subheader("Leaderboard")
 
+start_date_label = returns.index[0].strftime("%m/%d/%Y")
+end_date_label = returns.index[-1].strftime("%m/%d/%Y")
+
 rows = []
 for rank, (ticker, ret) in enumerate(final_returns.items(), start=1):
     # Shares bought with investment
@@ -222,12 +263,16 @@ for rank, (ticker, ret) in enumerate(final_returns.items(), start=1):
     if rank == 1:
         display_ticker = f"👑 {ticker}"
     elif rank == total_players:
-        display_ticker = f"🍼 {ticker}"
+        display_ticker = f"💩 {ticker}"
     else:
         display_ticker = ticker
     rows.append({
         "Rank": rank,
+        "ETF": ETF_MAP.get(ticker, ""),
+        "Company": NAME_MAP[ticker],
         "Ticker": display_ticker,
+        f"Start Price ({start_date_label})": f"${share_price:.2f}",
+        f"End Price ({end_date_label})": f"${end_prices[ticker]:.2f}",
         "Total Return (%)": f"{total_return:+.2f}%",
         "Price Return (%)": f"{ret:+.2f}%",
         "Dividends": f"${div_income:.2f}",
@@ -236,4 +281,5 @@ for rank, (ticker, ret) in enumerate(final_returns.items(), start=1):
         "Profit / Loss": f"${profit:+.2f}",
     })
 
-st.table(pd.DataFrame(rows).set_index("Rank"))
+df = pd.DataFrame(rows)
+st.markdown(df.to_html(escape=False, index=False, classes="leaderboard"), unsafe_allow_html=True)

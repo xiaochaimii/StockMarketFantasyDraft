@@ -1,289 +1,76 @@
 {
   "investment_amount": 10.0,
   "players": [
-    {
-      "name": "AAPL",
-      "ticker": "AAPL"
-    },
-    {
-      "name": "AB",
-      "ticker": "AB"
-    },
-    {
-      "name": "ALK",
-      "ticker": "ALK"
-    },
-    {
-      "name": "AMD",
-      "ticker": "AMD"
-    },
-    {
-      "name": "AMZN",
-      "ticker": "AMZN"
-    },
-    {
-      "name": "ANET",
-      "ticker": "ANET"
-    },
-    {
-      "name": "APLD",
-      "ticker": "APLD"
-    },
-    {
-      "name": "ASML",
-      "ticker": "ASML"
-    },
-    {
-      "name": "ASTS",
-      "ticker": "ASTS"
-    },
-    {
-      "name": "AVGO",
-      "ticker": "AVGO"
-    },
-    {
-      "name": "BRK.B",
-      "ticker": "BRK-B"
-    },
-    {
-      "name": "CIFR",
-      "ticker": "CIFR"
-    },
-    {
-      "name": "COIN",
-      "ticker": "COIN"
-    },
-    {
-      "name": "COST",
-      "ticker": "COST"
-    },
-    {
-      "name": "CRWD",
-      "ticker": "CRWD"
-    },
-    {
-      "name": "DASH",
-      "ticker": "DASH"
-    },
-    {
-      "name": "DIS",
-      "ticker": "DIS"
-    },
-    {
-      "name": "DUOL",
-      "ticker": "DUOL"
-    },
-    {
-      "name": "ENLT",
-      "ticker": "ENLT"
-    },
-    {
-      "name": "FIG",
-      "ticker": "FIG"
-    },
-    {
-      "name": "GD",
-      "ticker": "GD"
-    },
-    {
-      "name": "GLD",
-      "ticker": "GLD"
-    },
-    {
-      "name": "GOOG",
-      "ticker": "GOOG"
-    },
-    {
-      "name": "HD",
-      "ticker": "HD"
-    },
-    {
-      "name": "HNST",
-      "ticker": "HNST"
-    },
-    {
-      "name": "IBM",
-      "ticker": "IBM"
-    },
-    {
-      "name": "INTC",
-      "ticker": "INTC"
-    },
-    {
-      "name": "ION",
-      "ticker": "ION"
-    },
-    {
-      "name": "IONQ",
-      "ticker": "IONQ"
-    },
-    {
-      "name": "IREN",
-      "ticker": "IREN"
-    },
-    {
-      "name": "JNJ",
-      "ticker": "JNJ"
-    },
-    {
-      "name": "LLY",
-      "ticker": "LLY"
-    },
-    {
-      "name": "LMT",
-      "ticker": "LMT"
-    },
-    {
-      "name": "LRCX",
-      "ticker": "LRCX"
-    },
-    {
-      "name": "MAR",
-      "ticker": "MAR"
-    },
-    {
-      "name": "MCD",
-      "ticker": "MCD"
-    },
-    {
-      "name": "MELI",
-      "ticker": "MELI"
-    },
-    {
-      "name": "META",
-      "ticker": "META"
-    },
-    {
-      "name": "MRNA",
-      "ticker": "MRNA"
-    },
-    {
-      "name": "MSFT",
-      "ticker": "MSFT"
-    },
-    {
-      "name": "MSTR",
-      "ticker": "MSTR"
-    },
-    {
-      "name": "MU",
-      "ticker": "MU"
-    },
-    {
-      "name": "NFLX",
-      "ticker": "NFLX"
-    },
-    {
-      "name": "NOC",
-      "ticker": "NOC"
-    },
-    {
-      "name": "NTDOY",
-      "ticker": "NTDOY"
-    },
-    {
-      "name": "NVDA",
-      "ticker": "NVDA"
-    },
-    {
-      "name": "NVO",
-      "ticker": "NVO"
-    },
-    {
-      "name": "ORCL",
-      "ticker": "ORCL"
-    },
-    {
-      "name": "PANW",
-      "ticker": "PANW"
-    },
-    {
-      "name": "PG",
-      "ticker": "PG"
-    },
-    {
-      "name": "PLTR",
-      "ticker": "PLTR"
-    },
-    {
-      "name": "PPLT",
-      "ticker": "PPLT"
-    },
-    {
-      "name": "RBLX",
-      "ticker": "RBLX"
-    },
-    {
-      "name": "RIVN",
-      "ticker": "RIVN"
-    },
-    {
-      "name": "RTX",
-      "ticker": "RTX"
-    },
-    {
-      "name": "SLV",
-      "ticker": "SLV"
-    },
-    {
-      "name": "SNDK",
-      "ticker": "SNDK"
-    },
-    {
-      "name": "STX",
-      "ticker": "STX"
-    },
-    {
-      "name": "SVNDY",
-      "ticker": "SVNDY"
-    },
-    {
-      "name": "TGT",
-      "ticker": "TGT"
-    },
-    {
-      "name": "TPL",
-      "ticker": "TPL"
-    },
-    {
-      "name": "TSM",
-      "ticker": "TSM"
-    },
-    {
-      "name": "TYGO",
-      "ticker": "TYGO"
-    },
-    {
-      "name": "UNH",
-      "ticker": "UNH"
-    },
-    {
-      "name": "WDAY",
-      "ticker": "WDAY"
-    },
-    {
-      "name": "WDC",
-      "ticker": "WDC"
-    },
-    {
-      "name": "WM",
-      "ticker": "WM"
-    },
-    {
-      "name": "WMT",
-      "ticker": "WMT"
-    },
-    {
-      "name": "XOM",
-      "ticker": "XOM"
-    },
-    {
-      "name": "TER",
-      "ticker": "TER"
-    },
-    {
-      "name": "ARM",
-      "ticker": "ARM"
-    }
+    {"etf": "ANTY", "name": "Apple", "ticker": "AAPL"},
+    {"etf": "ANTY", "name": "AllianceBernstein", "ticker": "AB"},
+    {"etf": "ANTY", "name": "Alaska Airlines", "ticker": "ALK"},
+    {"etf": "ANTY", "name": "AMD", "ticker": "AMD"},
+    {"etf": "ANTY", "name": "Amazon", "ticker": "AMZN"},
+    {"etf": "ANTY", "name": "Arista Networks", "ticker": "ANET"},
+    {"etf": "UNCL", "name": "Applied Digital Corp", "ticker": "APLD"},
+    {"etf": "ANTY", "name": "Arm Holdings plc", "ticker": "ARM"},
+    {"etf": "ANTY", "name": "ASML Holding", "ticker": "ASML"},
+    {"etf": "KIDZ", "name": "AST SpaceMobile", "ticker": "ASTS"},
+    {"etf": "UNCL", "name": "Broadcom", "ticker": "AVGO"},
+    {"etf": "UNCL", "name": "Berkshire Hathaway Inc", "ticker": "BRK-B"},
+    {"etf": "UNCL", "name": "Cipher Mining", "ticker": "CIFR"},
+    {"etf": "ANTY", "name": "Coinbase", "ticker": "COIN"},
+    {"etf": "ANTY", "name": "Costco", "ticker": "COST"},
+    {"etf": "UNCL", "name": "Crowdstrike", "ticker": "CRWD"},
+    {"etf": "ANTY", "name": "Doordash", "ticker": "DASH"},
+    {"etf": "KIDZ", "name": "Disney", "ticker": "DIS"},
+    {"etf": "UNCL", "name": "Duolingo", "ticker": "DUOL"},
+    {"etf": "UNCL", "name": "Enlight Renewable", "ticker": "ENLT"},
+    {"etf": "ANTY", "name": "Figma", "ticker": "FIG"},
+    {"etf": "UNCL", "name": "General Dynamics", "ticker": "GD"},
+    {"etf": "KIDZ", "name": "SPDR Gold Trust", "ticker": "GLD"},
+    {"etf": "ANTY", "name": "Alphabet", "ticker": "GOOG"},
+    {"etf": "UNCL", "name": "Home Depot", "ticker": "HD"},
+    {"etf": "KIDZ", "name": "The Honest Company", "ticker": "HNST"},
+    {"etf": "ANTY", "name": "IBM", "ticker": "IBM"},
+    {"etf": "UNCL", "name": "Intel", "ticker": "INTC"},
+    {"etf": "ANTY", "name": "ProShares Battery Metals", "ticker": "ION"},
+    {"etf": "ANTY", "name": "IonQ", "ticker": "IONQ"},
+    {"etf": "ANTY", "name": "IREN Ltd", "ticker": "IREN"},
+    {"etf": "KIDZ", "name": "Johnson & Johnson", "ticker": "JNJ"},
+    {"etf": "UNCL", "name": "Eli Lilly", "ticker": "LLY"},
+    {"etf": "UNCL", "name": "Lockheed Martin", "ticker": "LMT"},
+    {"etf": "UNCL", "name": "Lam Research Corp", "ticker": "LRCX"},
+    {"etf": "ANTY", "name": "Marriott", "ticker": "MAR"},
+    {"etf": "KIDZ", "name": "McDonalds", "ticker": "MCD"},
+    {"etf": "ANTY", "name": "MercadoLibre", "ticker": "MELI"},
+    {"etf": "KIDZ", "name": "Meta", "ticker": "META"},
+    {"etf": "ANTY", "name": "Moderna", "ticker": "MRNA"},
+    {"etf": "ANTY", "name": "Microsoft", "ticker": "MSFT"},
+    {"etf": "UNCL", "name": "Strategy Inc.", "ticker": "MSTR"},
+    {"etf": "ANTY", "name": "Micron Technology", "ticker": "MU"},
+    {"etf": "UNCL", "name": "Netflix", "ticker": "NFLX"},
+    {"etf": "UNCL", "name": "Northrop Grumman", "ticker": "NOC"},
+    {"etf": "KIDZ", "name": "Nintendo", "ticker": "NTDOY"},
+    {"etf": "UNCL", "name": "Nvidia", "ticker": "NVDA"},
+    {"etf": "ANTY", "name": "Novo Nordisk", "ticker": "NVO"},
+    {"etf": "UNCL", "name": "Oracle", "ticker": "ORCL"},
+    {"etf": "UNCL", "name": "Palo Alto Networks", "ticker": "PANW"},
+    {"etf": "ANTY", "name": "Procter & Gamble", "ticker": "PG"},
+    {"etf": "ANTY", "name": "Palantir", "ticker": "PLTR"},
+    {"etf": "ANTY", "name": "Platinum Shares ETF", "ticker": "PPLT"},
+    {"etf": "UNCL", "name": "Roblox", "ticker": "RBLX"},
+    {"etf": "UNCL", "name": "Rivian", "ticker": "RIVN"},
+    {"etf": "UNCL", "name": "RTX (Raytheon)", "ticker": "RTX"},
+    {"etf": "ANTY", "name": "iShares Silver Trust", "ticker": "SLV"},
+    {"etf": "UNCL", "name": "Sandisk", "ticker": "SNDK"},
+    {"etf": "ANTY", "name": "Seagate", "ticker": "STX"},
+    {"etf": "ANTY", "name": "Seven & i Holdings", "ticker": "SVNDY"},
+    {"etf": "ANTY", "name": "Teradyne", "ticker": "TER"},
+    {"etf": "ANTY", "name": "Target", "ticker": "TGT"},
+    {"etf": "ANTY", "name": "Texas Pacific Land", "ticker": "TPL"},
+    {"etf": "UNCL", "name": "Taiwan Semiconductor", "ticker": "TSM"},
+    {"etf": "ANTY", "name": "Tigo Energy", "ticker": "TYGO"},
+    {"etf": "UNCL", "name": "UnitedHealth", "ticker": "UNH"},
+    {"etf": "KIDZ", "name": "Workday", "ticker": "WDAY"},
+    {"etf": "KIDZ", "name": "Western Digital", "ticker": "WDC"},
+    {"etf": "ANTY", "name": "Waste Management", "ticker": "WM"},
+    {"etf": "ANTY", "name": "Walmart", "ticker": "WMT"},
+    {"etf": "ANTY", "name": "Exxon Mobil", "ticker": "XOM"}
   ]
 }
