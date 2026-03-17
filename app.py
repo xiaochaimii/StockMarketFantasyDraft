@@ -19,7 +19,7 @@ NAME_MAP = {p["ticker"]: p["name"] for p in PLAYERS}
 # --- Sidebar ---
 st.sidebar.title("Fantasy Draft Settings")
 
-default_start = datetime.date(2025, 1, 1)
+default_start = datetime.date(2026, 3, 6)
 default_end = datetime.date.today()
 
 start_date = st.sidebar.date_input("Start Date", value=default_start)
