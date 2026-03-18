@@ -154,11 +154,24 @@ table td, table th, code, .mono { font-family: 'IBM Plex Mono', monospace !impor
     box-shadow: var(--shadow);
 }
 .hero-card {
-    padding: 1.6rem 1.75rem;
+    padding: 1.4rem 1.75rem;
     border-radius: 28px;
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.75rem;
     position: relative;
     overflow: hidden;
+}
+.hero-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.hero-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+    padding-top: 0.3rem;
 }
 .hero-card::after {
     content: "";
@@ -190,8 +203,8 @@ table td, table th, code, .mono { font-family: 'IBM Plex Mono', monospace !impor
 }
 .section-card {
     border-radius: 24px;
-    padding: 1rem 1.2rem 1.25rem;
-    margin-top: 1rem;
+    padding: 0.85rem 1.1rem 1rem;
+    margin-top: 0.6rem;
 }
 .metric-card {
     background: linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(242, 248, 241, 0.96) 100%);
@@ -443,6 +456,38 @@ hr {
         max-height: 240px;
     }
 }
+.etf-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.3rem 0;
+}
+.etf-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    min-width: 6.5rem;
+    white-space: nowrap;
+}
+.etf-bar-bg {
+    flex: 1;
+    background: rgba(18, 51, 36, 0.06);
+    border-radius: 6px;
+    height: 1.5rem;
+    overflow: hidden;
+}
+.etf-bar {
+    height: 100%;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #fff;
+    min-width: 3rem;
+    transition: width 0.4s ease;
+}
 
 </style>
 """, unsafe_allow_html=True)
@@ -593,9 +638,33 @@ def compute_throne_history(returns, valid_tickers, name_map):
 tab_dashboard, tab_admin = st.tabs(["Dashboard", "Admin"])
 
 with tab_dashboard:
+    # Build market status HTML for hero card
+    now_et = datetime.datetime.now(ZoneInfo("America/New_York"))
+    hero_timestamp = now_et.strftime("%I:%M:%S %p ET")
+    if is_market_open():
+        market_status_html = (
+            f'<div class="hero-status">'
+            f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#19a05f;'
+            f'box-shadow:0 0 6px #19a05f;"></span>'
+            f'<span style="font-size:0.78rem;color:#888;">'
+            f'<strong style="color:#19a05f;">LIVE</strong> &middot; {hero_timestamp}'
+            f'</span></div>'
+        )
+    else:
+        market_status_html = (
+            f'<div class="hero-status">'
+            f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--muted);"></span>'
+            f'<span style="font-size:0.78rem;color:var(--muted);">'
+            f'Closed &middot; {hero_timestamp}'
+            f'</span></div>'
+        )
+
     st.markdown("""
     <section class="hero-card">
-      <h1 class="hero-title">Stock Market Draft Standings</h1>
+      <div class="hero-top-row">
+        <h1 class="hero-title">Stock Market Draft Standings</h1>
+        """ + market_status_html + """
+      </div>
       <div class="hero-meta">
         <span class="hero-pill">Window: """ + start_date.strftime("%b %d, %Y") + """ to """ + end_date.strftime("%b %d, %Y") + """</span>
         <span class="hero-pill">Entry stake: $""" + f"{INVESTMENT:.0f}" + """ per stock</span>
@@ -606,43 +675,6 @@ with tab_dashboard:
 
     @st.fragment(run_every=REFRESH_INTERVAL)
     def live_dashboard():
-        # --- Live status indicator ---
-        now_et = datetime.datetime.now(ZoneInfo("America/New_York"))
-        timestamp = now_et.strftime("%I:%M:%S %p ET")
-        if is_market_open():
-            import streamlit.components.v1 as components
-            components.html(
-                f'<div style="display:flex;align-items:center;gap:0.5rem;font-family:sans-serif;">'
-                f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#19a05f;'
-                f'box-shadow:0 0 6px #19a05f;"></span>'
-                f'<span style="font-size:0.82rem;color:#888;">'
-                f'<strong style="color:#19a05f;">LIVE</strong> &middot; Updated {timestamp} &middot; '
-                f'Next refresh in <span id="refresh-countdown">60</span>s'
-                f'</span></div>'
-                f'<script>'
-                f'(function() {{'
-                f'  var el = document.getElementById("refresh-countdown");'
-                f'  if (!el) return;'
-                f'  var seconds = 60;'
-                f'  var timer = setInterval(function() {{'
-                f'    seconds--;'
-                f'    if (seconds <= 0) {{ clearInterval(timer); el.textContent = "0"; return; }}'
-                f'    el.textContent = seconds;'
-                f'  }}, 1000);'
-                f'}})()'
-                f'</script>',
-                height=30,
-            )
-        else:
-            st.markdown(
-                f'<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;">'
-                f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--muted);"></span>'
-                f'<span style="font-size:0.82rem;color:var(--muted);">'
-                f'Market closed &middot; Last updated {timestamp}'
-                f'</span></div>',
-                unsafe_allow_html=True,
-            )
-
         if start_date >= end_date:
             st.error("Start date must be before end date.")
             st.stop()
@@ -690,15 +722,11 @@ with tab_dashboard:
                 etf_counts[etf] = etf_counts.get(etf, 0) + 1
         etf_avgs = {etf: etf_sums[etf] / etf_counts[etf] for etf in etf_sums}
         etf_ranked = sorted(etf_avgs.items(), key=lambda x: x[1], reverse=True)
-        parts = []
         medals = ["🥇", "🥈", "🥉"]
-        for i, (etf, total) in enumerate(etf_ranked):
-            label = medals[i] if i < len(medals) else ""
-            parts.append(f"{label} {ETF_EMOJI.get(etf, '')} {html_mod.escape(etf)} ({total:+.2f}%)")
         best_ticker = final_returns.index[0]
         worst_ticker = final_returns.index[-1]
         throne = compute_throne_history(returns, valid_tickers, NAME_MAP)
-        metric_cols = st.columns(2)
+        metric_cols = st.columns([1, 1, 1.2])
         metric_cols[0].markdown(
             f"""
             <div class="metric-card mvp">
@@ -722,53 +750,26 @@ with tab_dashboard:
             unsafe_allow_html=True,
         )
 
-        st.markdown(
+        # --- ETF Standing with progress bars ---
+        max_etf_val = max(abs(v) for v in etf_avgs.values()) if etf_avgs else 1
+        etf_bar_html = ""
+        for i, (etf, avg_ret) in enumerate(etf_ranked):
+            medal = medals[i] if i < len(medals) else ""
+            emoji = ETF_EMOJI.get(etf, "")
+            bar_width = max(int(abs(avg_ret) / max_etf_val * 100), 8)
+            bar_color = "var(--accent)" if avg_ret >= 0 else "var(--negative)"
+            etf_bar_html += (
+                f'<div class="etf-row">'
+                f'<span class="etf-label">{medal} {emoji} {html_mod.escape(etf)}</span>'
+                f'<div class="etf-bar-bg">'
+                f'<div class="etf-bar" style="width:{bar_width}%;background:{bar_color};">{avg_ret:+.2f}%</div>'
+                f'</div></div>'
+            )
+        metric_cols[2].markdown(
             f"""
-            <section class="section-card" style="text-align: center;">
-              <div class="section-heading">ETF Standing ({start_date.strftime('%b %d, %Y')} – {end_date.strftime('%b %d, %Y')})</div>
-              {''.join(f'<p class="section-copy">{p}</p>' for p in parts)}
-            </section>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        # --- Throne History ---
-        def _render_throne_entries(history):
-            entries = []
-            for entry in history:
-                date_str = entry["date"].strftime("%b %d")
-                ticker_esc = html_mod.escape(entry["ticker"])
-                name_esc = html_mod.escape(entry["name"])
-                ret = entry["return_pct"]
-                ret_str = f"{ret:+.2f}%"
-                ret_cls = "positive" if ret >= 0 else "negative"
-                displaced = ""
-                if entry["prev_ticker"]:
-                    displaced = f' · displaced {html_mod.escape(entry["prev_ticker"])}'
-                entries.append(
-                    f'<div class="throne-entry">'
-                    f'<span class="throne-date">{date_str}</span>'
-                    f'<span class="throne-ticker">{ticker_esc}</span>'
-                    f'<span class="throne-detail">{name_esc} · <span class="{ret_cls}">{ret_str}</span>{displaced}</span>'
-                    f'</div>'
-                )
-            return "".join(entries)
-
-        throne_cols = st.columns(2)
-        throne_cols[0].markdown(
-            f"""
-            <div class="metric-card mvp">
-              <div class="section-heading">👑 MVP Throne</div>
-              <div class="throne-scroll">{_render_throne_entries(throne['mvp_history'])}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        throne_cols[1].markdown(
-            f"""
-            <div class="metric-card bench">
-              <div class="section-heading">🪑 Benchwarmer Throne</div>
-              <div class="throne-scroll">{_render_throne_entries(throne['bench_history'])}</div>
+            <div class="metric-card" style="height:100%;">
+              <div class="metric-label">ETF Standing</div>
+              <div style="margin-top:0.4rem;">{etf_bar_html}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -847,7 +848,7 @@ with tab_dashboard:
                        gridcolor="rgba(31, 26, 23, 0.06)", side="right"),
             hovermode="x",
             hoverlabel=dict(bgcolor="white", font_color="#102018", font_size=13, bordercolor="#ccc"),
-            height=500, showlegend=False,
+            height=400, showlegend=False,
             paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#fbfdf9",
             font=dict(family="Space Grotesk, sans-serif", color="#102018"),
             title_font=dict(size=18, color="#102018"),
@@ -871,8 +872,7 @@ with tab_dashboard:
                              tickmode="array", tickvals=top_tv, ticktext=top_tt)
 
         chart_config = {"displayModeBar": False, "scrollZoom": False}
-        col1, col2 = st.columns(2)
-        col1.plotly_chart(fig_top, use_container_width=True, config=chart_config)
+        st.plotly_chart(fig_top, use_container_width=True, config=chart_config)
 
         # --- Bump Chart: Bottom 10 Out of the Money ---
         bottom10_returns = returns[bottom10_tickers]
@@ -891,7 +891,49 @@ with tab_dashboard:
         fig_bottom.update_yaxes(zeroline=False, fixedrange=True, automargin=True,
                                 tickmode="array", tickvals=bot_tv, ticktext=bot_tt)
 
-        col2.plotly_chart(fig_bottom, use_container_width=True, config=chart_config)
+        st.plotly_chart(fig_bottom, use_container_width=True, config=chart_config)
+
+        # --- Throne History (below charts) ---
+        def _render_throne_entries(history):
+            entries = []
+            for entry in history:
+                date_str = entry["date"].strftime("%b %d")
+                ticker_esc = html_mod.escape(entry["ticker"])
+                name_esc = html_mod.escape(entry["name"])
+                ret = entry["return_pct"]
+                ret_str = f"{ret:+.2f}%"
+                ret_cls = "positive" if ret >= 0 else "negative"
+                displaced = ""
+                if entry["prev_ticker"]:
+                    displaced = f' · displaced {html_mod.escape(entry["prev_ticker"])}'
+                entries.append(
+                    f'<div class="throne-entry">'
+                    f'<span class="throne-date">{date_str}</span>'
+                    f'<span class="throne-ticker">{ticker_esc}</span>'
+                    f'<span class="throne-detail">{name_esc} · <span class="{ret_cls}">{ret_str}</span>{displaced}</span>'
+                    f'</div>'
+                )
+            return "".join(entries)
+
+        throne_cols = st.columns(2)
+        throne_cols[0].markdown(
+            f"""
+            <div class="metric-card mvp">
+              <div class="section-heading">👑 MVP Throne</div>
+              <div class="throne-scroll">{_render_throne_entries(throne['mvp_history'])}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        throne_cols[1].markdown(
+            f"""
+            <div class="metric-card bench">
+              <div class="section-heading">🪑 Benchwarmer Throne</div>
+              <div class="throne-scroll">{_render_throne_entries(throne['bench_history'])}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
         # --- Leaderboard ---
         st.markdown("""
