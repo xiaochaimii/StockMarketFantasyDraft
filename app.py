@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 import streamlit as st
 import pandas as pd
 import yfinance as yf
+import numpy as np
 import plotly.graph_objects as go
 
 
@@ -404,6 +405,44 @@ hr {
         padding: 0.3rem 0.6rem;
     }
 }
+.throne-scroll {
+    max-height: 320px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+.throne-entry {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid rgba(18, 51, 36, 0.08);
+}
+.throne-entry:last-child {
+    border-bottom: none;
+}
+.throne-date {
+    font-family: 'IBM Plex Mono', monospace !important;
+    font-size: 0.72rem;
+    color: var(--muted);
+    white-space: nowrap;
+}
+.throne-ticker {
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+.throne-detail {
+    font-size: 0.78rem;
+    color: var(--muted);
+}
+@media (max-width: 768px) {
+    .throne-entry {
+        flex-wrap: wrap;
+        gap: 0.3rem;
+    }
+    .throne-scroll {
+        max-height: 240px;
+    }
+}
 
 </style>
 """, unsafe_allow_html=True)
@@ -503,6 +542,52 @@ def fetch_dividends(tickers, start, end):
         except Exception:
             divs[ticker] = 0.0
     return divs
+
+
+def compute_throne_history(returns, valid_tickers, name_map):
+    """Compute MVP/Benchwarmer streak counts and transition history."""
+    daily_returns = returns[valid_tickers]
+    if len(daily_returns) > 1:
+        daily_returns = daily_returns.iloc[1:]
+    mvp_series = daily_returns.idxmax(axis=1)
+    bench_series = daily_returns.idxmin(axis=1)
+
+    def _streak_and_history(series):
+        dates = series.index.tolist()
+        holders = series.tolist()
+        if not dates:
+            return 0, []
+        current = holders[-1]
+        streak = 1
+        for i in range(len(holders) - 2, -1, -1):
+            if holders[i] == current:
+                streak += 1
+            else:
+                break
+        history = []
+        prev_holder = None
+        for date, holder in zip(dates, holders):
+            if holder != prev_holder:
+                ret = daily_returns.loc[date, holder]
+                history.append({
+                    "date": date,
+                    "ticker": holder,
+                    "name": name_map.get(holder, holder),
+                    "prev_ticker": prev_holder,
+                    "return_pct": ret,
+                })
+                prev_holder = holder
+        history.reverse()
+        return streak, history
+
+    mvp_streak, mvp_history = _streak_and_history(mvp_series)
+    bench_streak, bench_history = _streak_and_history(bench_series)
+    return {
+        "mvp_streak": mvp_streak,
+        "bench_streak": bench_streak,
+        "mvp_history": mvp_history,
+        "bench_history": bench_history,
+    }
 
 
 tab_dashboard, tab_admin = st.tabs(["Dashboard", "Admin"])
@@ -612,6 +697,7 @@ with tab_dashboard:
             parts.append(f"{label} {ETF_EMOJI.get(etf, '')} {html_mod.escape(etf)} ({total:+.2f}%)")
         best_ticker = final_returns.index[0]
         worst_ticker = final_returns.index[-1]
+        throne = compute_throne_history(returns, valid_tickers, NAME_MAP)
         metric_cols = st.columns(2)
         metric_cols[0].markdown(
             f"""
@@ -619,6 +705,7 @@ with tab_dashboard:
               <div class="metric-label">MVP</div>
               <div class="metric-value positive">{ETF_EMOJI.get(ETF_MAP.get(best_ticker, ''), '')} {html_mod.escape(best_ticker)}</div>
               <div class="metric-detail">{html_mod.escape(NAME_MAP[best_ticker])} <span class="positive">{final_returns[best_ticker]:+.2f}%</span></div>
+              <div class="metric-detail">🔥 {throne['mvp_streak']} day streak</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -629,6 +716,7 @@ with tab_dashboard:
               <div class="metric-label">Benchwarmer</div>
               <div class="metric-value negative">{ETF_EMOJI.get(ETF_MAP.get(worst_ticker, ''), '')} {html_mod.escape(worst_ticker)}</div>
               <div class="metric-detail">{html_mod.escape(NAME_MAP[worst_ticker])} <span class="negative">({abs(final_returns[worst_ticker]):.2f}%)</span></div>
+              <div class="metric-detail">📉 {throne['bench_streak']} day streak</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -644,86 +732,164 @@ with tab_dashboard:
             unsafe_allow_html=True,
         )
 
-        # --- Plotly Line Chart: Top 10 Winners ---
-        fig_top = go.Figure()
+        # --- Throne History ---
+        def _render_throne_entries(history):
+            entries = []
+            for entry in history:
+                date_str = entry["date"].strftime("%b %d")
+                ticker_esc = html_mod.escape(entry["ticker"])
+                name_esc = html_mod.escape(entry["name"])
+                ret = entry["return_pct"]
+                ret_str = f"{ret:+.2f}%"
+                ret_cls = "positive" if ret >= 0 else "negative"
+                displaced = ""
+                if entry["prev_ticker"]:
+                    displaced = f' · displaced {html_mod.escape(entry["prev_ticker"])}'
+                entries.append(
+                    f'<div class="throne-entry">'
+                    f'<span class="throne-date">{date_str}</span>'
+                    f'<span class="throne-ticker">{ticker_esc}</span>'
+                    f'<span class="throne-detail">{name_esc} · <span class="{ret_cls}">{ret_str}</span>{displaced}</span>'
+                    f'</div>'
+                )
+            return "".join(entries)
+
+        throne_cols = st.columns(2)
+        throne_cols[0].markdown(
+            f"""
+            <div class="metric-card mvp">
+              <div class="section-heading">👑 MVP Throne</div>
+              <div class="throne-scroll">{_render_throne_entries(throne['mvp_history'])}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        throne_cols[1].markdown(
+            f"""
+            <div class="metric-card bench">
+              <div class="section-heading">🪑 Benchwarmer Throne</div>
+              <div class="throne-scroll">{_render_throne_entries(throne['bench_history'])}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # --- ggbump-style sigmoid helper ---
+        def sigmoid_between(x_from, x_to, y_from, y_to, n=100, smooth=8):
+            t = np.linspace(-smooth, smooth, n)
+            s = np.exp(t) / (np.exp(t) + 1)
+            x_out = x_from + (x_to - x_from) * ((t + smooth) / (2 * smooth))
+            y_out = y_from + (y_to - y_from) * s
+            return x_out, y_out
+
+        def build_bump_traces(ranks_df, returns_df, tickers, colors, label_rank_fn=None):
+            traces = []
+            dates_num = np.arange(len(ranks_df))
+            dates = ranks_df.index
+
+            # Build y-axis tick labels from final-day ranks
+            tick_labels = {}
+            for i, ticker in enumerate(tickers):
+                rank_vals = ranks_df[ticker].values
+                final_bump_rank = int(rank_vals[-1])
+                final_rank = label_rank_fn(final_bump_rank) if label_rank_fn else final_bump_rank
+                final_ret = float(final_returns[ticker])
+                color = colors[i % len(colors)]
+                tick_labels[final_bump_rank] = f"<span style='color:{color}'><b>#{final_rank}</b> {NAME_MAP[ticker]} {final_ret:.2f}%</span>"
+
+            for i, ticker in enumerate(tickers):
+                rank_vals = ranks_df[ticker].values
+                ret_vals = returns_df[ticker].values
+                color = colors[i % len(colors)]
+
+                # Sigmoid curve segments
+                all_x, all_y = [], []
+                for j in range(len(rank_vals) - 1):
+                    sx, sy = sigmoid_between(dates_num[j], dates_num[j + 1],
+                                             rank_vals[j], rank_vals[j + 1])
+                    all_x.extend(sx)
+                    all_y.extend(sy)
+
+                # Map numeric x back to dates
+                date_x = []
+                d0, d1 = dates[0], dates[-1]
+                total_secs = (d1 - d0).total_seconds() if hasattr(d1 - d0, 'total_seconds') else float(dates_num[-1])
+                for xv in all_x:
+                    frac = xv / dates_num[-1] if dates_num[-1] != 0 else 0
+                    date_x.append(d0 + pd.Timedelta(seconds=frac * total_secs))
+
+                traces.append(go.Scatter(
+                    x=date_x, y=all_y, mode="lines",
+                    line=dict(width=3, color=color),
+                    hoverinfo="skip", showlegend=False,
+                ))
+                traces.append(go.Scatter(
+                    x=list(dates), y=list(rank_vals), mode="markers",
+                    name=NAME_MAP[ticker],
+                    marker=dict(size=8, color=color, line=dict(width=1.5, color="white")),
+                    customdata=[round(float(v), 2) for v in ret_vals],
+                    hovertemplate="#%{y:.0f} %{fullData.name} %{customdata:.2f}%<extra></extra>",
+                    showlegend=False,
+                ))
+
+            tick_vals = sorted(tick_labels.keys())
+            tick_texts = [tick_labels[v] for v in tick_vals]
+            return traces, tick_vals, tick_texts
 
         CHART_COLORS = [
             "#1f77b4", "#e45756", "#2ca02c", "#ff7f0e", "#9467bd",
             "#17becf", "#d62728", "#8c564b", "#e377c2", "#7f7f7f",
         ]
 
-        for rank, ticker in enumerate(top10_tickers, start=1):
-            ret = final_returns[ticker]
-            fig_top.add_trace(go.Scatter(
-                x=returns.index,
-                y=returns[ticker],
-                mode="lines",
-                name=f"#{rank} {NAME_MAP[ticker]} ({ticker}) {ret:+.2f}%",
-                hovertemplate="%{fullData.name}<extra></extra>",
-                line=dict(width=3, color=CHART_COLORS[(rank - 1) % len(CHART_COLORS)]),
-            ))
-
-        fig_top.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.6)
-
-        fig_top.update_layout(
-            title="Top 10 Stocks In the Money",
-            xaxis_title="",
-            yaxis_title="Total Return (%)",
-            legend_title=dict(text="", font=dict(color="#102018", size=13)),
-            hovermode="x unified",
+        bump_layout = dict(
+            xaxis_title="", yaxis_title="",
+            yaxis=dict(autorange="reversed", range=[0.5, 10.5],
+                       gridcolor="rgba(31, 26, 23, 0.06)", side="right"),
+            hovermode="x",
             hoverlabel=dict(bgcolor="white", font_color="#102018", font_size=13, bordercolor="#ccc"),
-            height=700,
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="#fbfdf9",
+            height=500, showlegend=False,
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="#fbfdf9",
             font=dict(family="Space Grotesk, sans-serif", color="#102018"),
             title_font=dict(size=18, color="#102018"),
-            legend=dict(orientation="h", yanchor="top", y=-0.15, x=0, xanchor="left", font=dict(color="#102018", size=12)),
-            margin=dict(t=90, r=24, b=200, l=40),
+            margin=dict(t=50, r=10, b=40, l=10),
         )
-        fig_top.update_xaxes(showgrid=False, fixedrange=True, tickfont=dict(color="#102018"), title_font=dict(color="#102018"))
-        fig_top.update_yaxes(gridcolor="rgba(31, 26, 23, 0.12)", zeroline=False, fixedrange=True, tickfont=dict(color="#102018"), title_font=dict(color="#102018"))
+
+        # --- Bump Chart: Top 10 In the Money ---
+        top10_returns = returns[top10_tickers]
+        top10_ranks = top10_returns.rank(axis=1, ascending=False)
+        # Assign initial ranks (day 1 = all 0%) based on final ordering to avoid random ties
+        top10_ranks.iloc[0] = range(1, len(top10_tickers) + 1)
+        top10_returns_trimmed = top10_returns
+
+        top_traces, top_tv, top_tt = build_bump_traces(
+            top10_ranks, top10_returns_trimmed, top10_tickers, CHART_COLORS,
+        )
+        fig_top = go.Figure(data=top_traces)
+        fig_top.update_layout(title="Top 10 Stocks In the Money", **bump_layout)
+        fig_top.update_xaxes(showgrid=False, fixedrange=True, tickfont=dict(color="#102018"))
+        fig_top.update_yaxes(zeroline=False, fixedrange=True, automargin=True,
+                             tickmode="array", tickvals=top_tv, ticktext=top_tt)
 
         chart_config = {"displayModeBar": False, "scrollZoom": False}
-
         col1, col2 = st.columns(2)
-
         col1.plotly_chart(fig_top, use_container_width=True, config=chart_config)
 
-        # --- Plotly Line Chart: Top 10 Losers ---
-        fig_bottom = go.Figure()
+        # --- Bump Chart: Bottom 10 Out of the Money ---
+        bottom10_returns = returns[bottom10_tickers]
+        bottom10_ranks = bottom10_returns.rank(axis=1, ascending=False)
+        bottom10_ranks.iloc[0] = range(1, len(bottom10_tickers) + 1)
+        bottom10_returns_trimmed = bottom10_returns
 
         total = len(final_returns)
-        for i, ticker in enumerate(bottom10_tickers):
-            rank = total - len(bottom10_tickers) + i + 1
-            ret = final_returns[ticker]
-            fig_bottom.add_trace(go.Scatter(
-                x=returns.index,
-                y=returns[ticker],
-                mode="lines",
-                name=f"#{rank} {NAME_MAP[ticker]} ({ticker}) {ret:+.2f}%",
-                hovertemplate="%{fullData.name}<extra></extra>",
-                line=dict(width=3, color=CHART_COLORS[i % len(CHART_COLORS)]),
-            ))
-
-        fig_bottom.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.6)
-
-        fig_bottom.update_layout(
-            title="Bottom 10 Stocks Out of the Money",
-            xaxis_title="",
-            yaxis_title="Total Return (%)",
-            legend_title=dict(text="", font=dict(color="#102018", size=13)),
-            hovermode="x unified",
-            hoverlabel=dict(bgcolor="white", font_color="#102018", font_size=13, bordercolor="#ccc"),
-            height=700,
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="#fbfdf9",
-            font=dict(family="Space Grotesk, sans-serif", color="#102018"),
-            title_font=dict(size=18, color="#102018"),
-            legend=dict(orientation="h", yanchor="top", y=-0.15, x=0, xanchor="left", font=dict(color="#102018", size=12)),
-            margin=dict(t=90, r=24, b=200, l=40),
+        bottom_traces, bot_tv, bot_tt = build_bump_traces(
+            bottom10_ranks, bottom10_returns_trimmed, bottom10_tickers,
+            CHART_COLORS, label_rank_fn=lambda r: total - 10 + r,
         )
-        fig_bottom.update_xaxes(showgrid=False, fixedrange=True, tickfont=dict(color="#102018"), title_font=dict(color="#102018"))
-        fig_bottom.update_yaxes(gridcolor="rgba(31, 26, 23, 0.12)", zeroline=False, fixedrange=True, tickfont=dict(color="#102018"), title_font=dict(color="#102018"))
+        fig_bottom = go.Figure(data=bottom_traces)
+        fig_bottom.update_layout(title="Bottom 10 Stocks Out of the Money", **bump_layout)
+        fig_bottom.update_xaxes(showgrid=False, fixedrange=True, tickfont=dict(color="#102018"))
+        fig_bottom.update_yaxes(zeroline=False, fixedrange=True, automargin=True,
+                                tickmode="array", tickvals=bot_tv, ticktext=bot_tt)
 
         col2.plotly_chart(fig_bottom, use_container_width=True, config=chart_config)
 
