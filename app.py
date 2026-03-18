@@ -69,16 +69,29 @@ table td, table th, code, .mono { font-family: 'IBM Plex Mono', monospace !impor
 [data-testid="stSidebar"] * {
     color: #f7efe4 !important;
 }
-[data-testid="stSidebar"] [data-baseweb="input"],
-[data-testid="stSidebar"] [data-baseweb="select"],
+[data-testid="stSidebar"] [data-baseweb="input"] {
+    background: #ffffff !important;
+    border-radius: 14px;
+}
+[data-testid="stSidebar"] [data-baseweb="select"] {
+    background: #ffffff !important;
+    border-radius: 14px;
+}
 [data-testid="stSidebar"] .stDateInput {
     background: rgba(255, 255, 255, 0.08);
     border-radius: 14px;
+}
+[data-testid="stSidebar"] .stDateInput [data-baseweb="input"] {
+    background: transparent !important;
 }
 [data-testid="stSidebar"] [data-baseweb="input"] input,
 [data-testid="stSidebar"] textarea {
     color: #102018 !important;
     -webkit-text-fill-color: #102018 !important;
+    background-color: #ffffff !important;
+}
+[data-testid="stSidebar"] .stDateInput [data-baseweb="input"] input {
+    background-color: transparent !important;
 }
 [data-testid="stSidebar"] [data-baseweb="input"] input::placeholder,
 [data-testid="stSidebar"] textarea::placeholder {
@@ -98,6 +111,7 @@ table td, table th, code, .mono { font-family: 'IBM Plex Mono', monospace !impor
 [data-testid="stSidebar"] [data-baseweb="select"] * {
     color: #102018 !important;
     -webkit-text-fill-color: #102018 !important;
+    background-color: #ffffff !important;
 }
 [data-testid="stSidebar"] button {
     border-radius: 999px;
@@ -277,6 +291,58 @@ hr {
     padding: 0.4rem 0.8rem;
     font-size: 0.82rem;
     color: var(--muted);
+}
+@media (max-width: 768px) {
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 1.5rem;
+    }
+    .hero-card {
+        padding: 1rem 1rem;
+        border-radius: 18px;
+    }
+    .hero-title {
+        font-size: 1.5rem;
+    }
+    .hero-subtitle {
+        font-size: 0.85rem;
+        max-width: 100%;
+    }
+    .section-card {
+        border-radius: 16px;
+        padding: 0.75rem 0.9rem;
+    }
+    .section-heading {
+        font-size: 1rem;
+    }
+    .metric-card {
+        padding: 0.75rem 0.9rem;
+        border-radius: 16px;
+    }
+    .metric-value {
+        font-size: 1.3rem;
+    }
+    .metric-label {
+        font-size: 0.65rem;
+    }
+    .metric-detail {
+        font-size: 0.75rem;
+    }
+    table.leaderboard td, table.leaderboard th {
+        padding: 8px 8px;
+        font-size: 0.7rem;
+        white-space: nowrap;
+    }
+    table.leaderboard th {
+        font-size: 0.65rem;
+    }
+    div[data-testid="stPlotlyChart"] {
+        border-radius: 16px;
+    }
+    .hero-pill {
+        font-size: 0.72rem;
+        padding: 0.3rem 0.6rem;
+    }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -485,6 +551,11 @@ st.markdown(
 # --- Plotly Line Chart: Top 10 Winners ---
 fig_top = go.Figure()
 
+CHART_COLORS = [
+    "#1f77b4", "#e45756", "#2ca02c", "#ff7f0e", "#9467bd",
+    "#17becf", "#d62728", "#8c564b", "#e377c2", "#7f7f7f",
+]
+
 for rank, ticker in enumerate(top10_tickers, start=1):
     ret = final_returns[ticker]
     fig_top.add_trace(go.Scatter(
@@ -492,30 +563,35 @@ for rank, ticker in enumerate(top10_tickers, start=1):
         y=returns[ticker],
         mode="lines",
         name=f"#{rank} {NAME_MAP[ticker]} ({ticker}) {ret:+.2f}%",
+        hovertemplate="%{fullData.name}<extra></extra>",
+        line=dict(width=3, color=CHART_COLORS[(rank - 1) % len(CHART_COLORS)]),
     ))
 
 fig_top.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.6)
 
 fig_top.update_layout(
     title="Top 10 Stocks In the Money",
-    xaxis_title="Trading Window",
+    xaxis_title="",
     yaxis_title="Total Return (%)",
-    legend_title="Stock",
+    legend_title=dict(text="", font=dict(color="#102018", size=13)),
     hovermode="x unified",
-    height=500,
+    hoverlabel=dict(bgcolor="white", font_color="#102018", font_size=13, bordercolor="#ccc"),
+    height=700,
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="#fbfdf9",
-    font=dict(family="Space Grotesk, sans-serif", color="#1f1a17"),
-    title_font=dict(size=20),
-    legend=dict(orientation="h", yanchor="top", y=-0.18, x=0, xanchor="left"),
-    margin=dict(t=90, r=24, b=90, l=40),
+    font=dict(family="Space Grotesk, sans-serif", color="#102018"),
+    title_font=dict(size=18, color="#102018"),
+    legend=dict(orientation="v", yanchor="top", y=-0.15, x=0, xanchor="left", font=dict(color="#102018", size=12)),
+    margin=dict(t=90, r=24, b=20, l=40),
 )
-fig_top.update_xaxes(showgrid=False)
-fig_top.update_yaxes(gridcolor="rgba(31, 26, 23, 0.08)", zeroline=False)
+fig_top.update_xaxes(showgrid=False, fixedrange=True, tickfont=dict(color="#102018"), title_font=dict(color="#102018"))
+fig_top.update_yaxes(gridcolor="rgba(31, 26, 23, 0.12)", zeroline=False, fixedrange=True, tickfont=dict(color="#102018"), title_font=dict(color="#102018"))
+
+chart_config = {"displayModeBar": False, "scrollZoom": False}
 
 col1, col2 = st.columns(2)
 
-col1.plotly_chart(fig_top, use_container_width=True)
+col1.plotly_chart(fig_top, use_container_width=True, config=chart_config)
 
 # --- Plotly Line Chart: Top 10 Losers ---
 fig_bottom = go.Figure()
@@ -529,28 +605,31 @@ for i, ticker in enumerate(bottom10_tickers):
         y=returns[ticker],
         mode="lines",
         name=f"#{rank} {NAME_MAP[ticker]} ({ticker}) {ret:+.2f}%",
+        hovertemplate="%{fullData.name}<extra></extra>",
+        line=dict(width=3, color=CHART_COLORS[i % len(CHART_COLORS)]),
     ))
 
 fig_bottom.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.6)
 
 fig_bottom.update_layout(
     title="Bottom 10 Stocks Out of the Money",
-    xaxis_title="Trading Window",
+    xaxis_title="",
     yaxis_title="Total Return (%)",
-    legend_title="Stock",
+    legend_title=dict(text="", font=dict(color="#102018", size=13)),
     hovermode="x unified",
-    height=500,
+    hoverlabel=dict(bgcolor="white", font_color="#102018", font_size=13, bordercolor="#ccc"),
+    height=700,
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="#fbfdf9",
-    font=dict(family="Space Grotesk, sans-serif", color="#1f1a17"),
-    title_font=dict(size=20),
-    legend=dict(orientation="h", yanchor="top", y=-0.18, x=0, xanchor="left"),
-    margin=dict(t=90, r=24, b=90, l=40),
+    font=dict(family="Space Grotesk, sans-serif", color="#102018"),
+    title_font=dict(size=18, color="#102018"),
+    legend=dict(orientation="v", yanchor="top", y=-0.15, x=0, xanchor="left", font=dict(color="#102018", size=12)),
+    margin=dict(t=90, r=24, b=20, l=40),
 )
-fig_bottom.update_xaxes(showgrid=False)
-fig_bottom.update_yaxes(gridcolor="rgba(31, 26, 23, 0.08)", zeroline=False)
+fig_bottom.update_xaxes(showgrid=False, fixedrange=True, tickfont=dict(color="#102018"), title_font=dict(color="#102018"))
+fig_bottom.update_yaxes(gridcolor="rgba(31, 26, 23, 0.12)", zeroline=False, fixedrange=True, tickfont=dict(color="#102018"), title_font=dict(color="#102018"))
 
-col2.plotly_chart(fig_bottom, use_container_width=True)
+col2.plotly_chart(fig_bottom, use_container_width=True, config=chart_config)
 
 # --- Leaderboard ---
 st.markdown("""
@@ -633,7 +712,7 @@ styled_df = (
     .set_table_attributes('class="leaderboard"')
     .apply(leaderboard_row_style, axis=1)
 )
-st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
+st.markdown(f'<div style="overflow-x: auto;">{styled_df.to_html(escape=False)}</div>', unsafe_allow_html=True)
 
 # --- Subscribe ---
 st.markdown("---")
