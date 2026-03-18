@@ -279,7 +279,16 @@ table.leaderboard tr td:first-child {
 [data-testid="InputInstructions"] {
     display: none !important;
 }
-div[data-testid="stTextInput"] input,
+div[data-testid="stTextInput"] [data-baseweb="input"],
+div[data-testid="stTextInput"] [data-baseweb="input"] * {
+    background-color: #ffffff !important;
+    color: #102018 !important;
+    -webkit-text-fill-color: #102018 !important;
+}
+div[data-testid="stTextInput"] [data-baseweb="input"] {
+    border-radius: 14px !important;
+    border: 1px solid rgba(16, 32, 24, 0.2) !important;
+}
 .stDateInput input {
     border-radius: 14px !important;
     background-color: #ffffff !important;
@@ -670,8 +679,8 @@ with tab_dashboard:
     st.markdown("""
     <section class="section-card">
       <div class="section-heading">Leaderboard</div>
-      <p class="section-copy"><strong>Price Return (%)</strong> is the percentage change in share price over the period, excluding dividends: <code>(End Price - Start Price) / Start Price × 100</code>.</p>
-      <p class="section-copy"><strong>Total Return (%)</strong> is the percentage return including both share price change and dividend payouts: <code>((End Price - Start Price) + Dividends) / Start Price × 100</code>.</p>
+      <p class="section-copy"><strong>Price Return (%)</strong> is the percentage change in share price over the period, excluding dividends.</p>
+      <p class="section-copy"><strong>Total Return (%)</strong> is the percentage return including both share price change and dividend payouts.</p>
     </section>
     """, unsafe_allow_html=True)
 
@@ -686,9 +695,10 @@ with tab_dashboard:
         # Dividend income for those shares
         div_per_share = dividends.get(ticker, 0.0)
         div_income = shares * div_per_share
-        # Final value = price return + dividends
-        price_value = INVESTMENT * (1 + ret / 100)
-        final_value = price_value + div_income
+        # Market value = shares × current price
+        market_value = shares * end_prices[ticker]
+        # Final value = market value + dividends
+        final_value = market_value + div_income
         total_return = (final_value / INVESTMENT - 1) * 100
         profit = final_value - INVESTMENT
         total_players = len(final_returns)
@@ -709,8 +719,8 @@ with tab_dashboard:
             "Stake": f"${INVESTMENT:.2f}",
             f"Units ({start_date_label})": f"{shares:.4f}",
             "Profit/(Loss)": format_signed_currency(profit),
+            "Market Value": format_signed_currency(market_value),
             "Dividends": format_signed_currency(div_income),
-            "Total Return": format_signed_currency(final_value),
             "Price Return (%)": format_signed_percent(ret),
             "Total Return (%)": format_signed_percent(total_return),
         })
