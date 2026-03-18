@@ -296,8 +296,8 @@ st.sidebar.title("Trading Windows")
 default_start = datetime.date(2026, 3, 6)
 default_end = datetime.datetime.now(ZoneInfo("America/Los_Angeles")).date()
 
-start_date = st.sidebar.date_input("Start Date", value=default_start)
-end_date = st.sidebar.date_input("End Date", value=default_end)
+start_date = st.sidebar.date_input("Start Date", value=default_start, format="MM/DD/YYYY")
+end_date = st.sidebar.date_input("End Date", value=default_end, format="MM/DD/YYYY")
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("Add/Remove Tickers")
@@ -325,13 +325,12 @@ if st.sidebar.button("Remove Ticker") and remove_ticker:
     st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("Current Roster")
-roster_search = st.sidebar.text_input("Search stocks", placeholder="Filter by name or ticker")
-for p in sorted(PLAYERS, key=lambda x: x['ticker'].upper()):
-    if roster_search and roster_search.upper() not in p['ticker'].upper() and roster_search.upper() not in p['name'].upper():
-        continue
-    etf_label = f"[{p.get('etf', '')}] " if p.get('etf') else ""
-    st.sidebar.write(f"{etf_label}**{p['ticker']}** — {p['name']}")
+st.sidebar.title("Search Stocks")
+search_options = [""] + [f"{p['ticker']} — {p['name']}" for p in sorted(PLAYERS, key=lambda x: x['ticker'].upper())]
+roster_selection = st.sidebar.selectbox("Search stocks", search_options, format_func=lambda x: "Select a stock" if x == "" else x, label_visibility="collapsed", key="stock_search")
+roster_search = roster_selection.split(" — ")[0] if roster_selection else ""
+if roster_search:
+    st.sidebar.button("Reset Search", on_click=lambda: st.session_state.update({"stock_search": ""}))
 
 # --- Main ---
 st.markdown("""
@@ -445,13 +444,9 @@ for ticker in valid_tickers:
 etf_avgs = {etf: etf_sums[etf] / etf_counts[etf] for etf in etf_sums}
 etf_ranked = sorted(etf_avgs.items(), key=lambda x: x[1], reverse=True)
 parts = []
+medals = ["🥇", "🥈", "🥉"]
 for i, (etf, total) in enumerate(etf_ranked):
-    if i == 0:
-        label = "🏆"
-    elif i == len(etf_ranked) - 1:
-        label = "📉"
-    else:
-        label = "🔹"
+    label = medals[i] if i < len(medals) else ""
     parts.append(f"{label} {ETF_EMOJI.get(etf, '')} {etf} ({total:+.2f}%)")
 best_ticker = final_returns.index[0]
 worst_ticker = final_returns.index[-1]
@@ -459,9 +454,9 @@ metric_cols = st.columns(2)
 metric_cols[0].markdown(
     f"""
     <div class="metric-card">
-      <div class="metric-label">Highest Performing</div>
+      <div class="metric-label">MVP</div>
       <div class="metric-value positive">{ETF_EMOJI.get(ETF_MAP.get(best_ticker, ''), '')} {best_ticker}</div>
-      <div class="metric-detail">Table leader: {NAME_MAP[best_ticker]} <span class="positive">{final_returns[best_ticker]:+.2f}%</span></div>
+      <div class="metric-detail">{NAME_MAP[best_ticker]} <span class="positive">{final_returns[best_ticker]:+.2f}%</span></div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -469,9 +464,9 @@ metric_cols[0].markdown(
 metric_cols[1].markdown(
     f"""
     <div class="metric-card">
-      <div class="metric-label">Lowest Performing</div>
+      <div class="metric-label">Benchwarmer</div>
       <div class="metric-value negative">{ETF_EMOJI.get(ETF_MAP.get(worst_ticker, ''), '')} {worst_ticker}</div>
-      <div class="metric-detail">Bottom of the table: {NAME_MAP[worst_ticker]} <span class="negative">({abs(final_returns[worst_ticker]):.2f}%)</span></div>
+      <div class="metric-detail">{NAME_MAP[worst_ticker]} <span class="negative">({abs(final_returns[worst_ticker]):.2f}%)</span></div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -480,8 +475,8 @@ metric_cols[1].markdown(
 st.markdown(
     f"""
     <section class="section-card">
-      <div class="section-heading">Matchday Report</div>
-      <p class="section-copy">Division split: {' &nbsp;&nbsp; '.join(parts)}</p>
+      <div class="section-heading">ETF Standing ({start_date.strftime('%b %d, %Y')} – {end_date.strftime('%b %d, %Y')})</div>
+      {''.join(f'<p class="section-copy">{p}</p>' for p in parts)}
     </section>
     """,
     unsafe_allow_html=True,
@@ -612,6 +607,14 @@ total_rows = max(len(df) - 1, 1)
 # Find the first row with a down arrow (negative total return)
 first_negative_idx = next((i for i, r in enumerate(rows) if r["Rank"].startswith("▼")), None)
 
+# Build set of matching row indices for search highlight
+search_matches = set()
+if roster_search:
+    for i, r in enumerate(rows):
+        ticker_raw = r["Ticker"].replace("👑 ", "").replace("💩 ", "")
+        if roster_search.upper() in ticker_raw.upper() or roster_search.upper() in r["Stock"].upper():
+            search_matches.add(i)
+
 
 def leaderboard_row_style(row):
     fraction = row.name / total_rows
@@ -619,6 +622,8 @@ def leaderboard_row_style(row):
     styles = [f"color: {color};"] * len(row)
     if row.name == first_negative_idx:
         styles = [s + " border-top: 3px solid #102018;" for s in styles]
+    if row.name in search_matches:
+        styles = [s + " background-color: rgba(215, 168, 58, 0.3);" for s in styles]
     return styles
 
 
