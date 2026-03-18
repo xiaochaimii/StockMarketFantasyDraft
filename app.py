@@ -1,11 +1,24 @@
 import html as html_mod
 import json
 import datetime
+from datetime import timedelta
 from zoneinfo import ZoneInfo
 import streamlit as st
 import pandas as pd
 import yfinance as yf
 import plotly.graph_objects as go
+
+
+def is_market_open():
+    now_et = datetime.datetime.now(ZoneInfo("America/New_York"))
+    if now_et.weekday() >= 5:
+        return False
+    market_open = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
+    market_close = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
+    return market_open <= now_et <= market_close
+
+
+REFRESH_INTERVAL = timedelta(seconds=60) if is_market_open() else None
 
 
 def format_signed_currency(value):
@@ -441,7 +454,7 @@ if roster_search:
 
 # --- Main ---
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=60)
 def fetch_returns(tickers, start, end):
     """Download adjusted prices and compute daily cumulative % return."""
     data = yf.download(
@@ -472,7 +485,7 @@ def fetch_returns(tickers, start, end):
     return pct_return, start_prices, end_prices
 
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=3600)
 def fetch_dividends(tickers, start, end):
     """Fetch total dividends per share for each ticker in the date range."""
     divs = {}
@@ -506,261 +519,288 @@ with tab_dashboard:
     </section>
     """, unsafe_allow_html=True)
 
-    if start_date >= end_date:
-        st.error("Start date must be before end date.")
-        st.stop()
-
-    try:
-        returns, start_prices, end_prices = fetch_returns(TICKERS, start_date, end_date)
-    except Exception as e:
-        st.error(f"Failed to fetch stock data: {e}")
-        st.stop()
-
-    if returns is None or returns.empty:
-        st.warning("No data returned for the selected date range.")
-        st.stop()
-
-    # Identify valid vs invalid tickers
-    valid_tickers = [t for t in TICKERS if t in returns.columns and returns[t].notna().any()]
-
-    # Fetch dividends for valid tickers
-    try:
-        dividends = fetch_dividends(valid_tickers, start_date, end_date)
-    except Exception:
-        dividends = {t: 0.0 for t in valid_tickers}
-    invalid_tickers = [t for t in TICKERS if t not in valid_tickers]
-
-    for t in invalid_tickers:
-        st.warning(f"No data for ticker **{t}** ({NAME_MAP[t]}) — excluded from results.")
-
-    if not valid_tickers:
-        st.error("No valid ticker data to display.")
-        st.stop()
-
-    # --- Rank tickers by final return ---
-    final_returns = returns[valid_tickers].iloc[-1].sort_values(ascending=False)
-    top10_tickers = final_returns.head(10).index.tolist()
-    bottom10_tickers = final_returns.tail(10).index.tolist()
-
-    # --- ETF Winner ---
-    ETF_EMOJI = {"UNCL": "👨‍🦳", "ANTY": "👩🏻", "KIDZ": "👶🏻"}
-    etf_sums = {}
-    etf_counts = {}
-    for ticker in valid_tickers:
-        etf = ETF_MAP.get(ticker, "")
-        if etf:
-            etf_sums[etf] = etf_sums.get(etf, 0) + final_returns[ticker]
-            etf_counts[etf] = etf_counts.get(etf, 0) + 1
-    etf_avgs = {etf: etf_sums[etf] / etf_counts[etf] for etf in etf_sums}
-    etf_ranked = sorted(etf_avgs.items(), key=lambda x: x[1], reverse=True)
-    parts = []
-    medals = ["🥇", "🥈", "🥉"]
-    for i, (etf, total) in enumerate(etf_ranked):
-        label = medals[i] if i < len(medals) else ""
-        parts.append(f"{label} {ETF_EMOJI.get(etf, '')} {html_mod.escape(etf)} ({total:+.2f}%)")
-    best_ticker = final_returns.index[0]
-    worst_ticker = final_returns.index[-1]
-    metric_cols = st.columns(2)
-    metric_cols[0].markdown(
-        f"""
-        <div class="metric-card mvp">
-          <div class="metric-label">MVP</div>
-          <div class="metric-value positive">{ETF_EMOJI.get(ETF_MAP.get(best_ticker, ''), '')} {html_mod.escape(best_ticker)}</div>
-          <div class="metric-detail">{html_mod.escape(NAME_MAP[best_ticker])} <span class="positive">{final_returns[best_ticker]:+.2f}%</span></div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    metric_cols[1].markdown(
-        f"""
-        <div class="metric-card bench">
-          <div class="metric-label">Benchwarmer</div>
-          <div class="metric-value negative">{ETF_EMOJI.get(ETF_MAP.get(worst_ticker, ''), '')} {html_mod.escape(worst_ticker)}</div>
-          <div class="metric-detail">{html_mod.escape(NAME_MAP[worst_ticker])} <span class="negative">({abs(final_returns[worst_ticker]):.2f}%)</span></div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        f"""
-        <section class="section-card" style="text-align: center;">
-          <div class="section-heading">ETF Standing ({start_date.strftime('%b %d, %Y')} – {end_date.strftime('%b %d, %Y')})</div>
-          {''.join(f'<p class="section-copy">{p}</p>' for p in parts)}
-        </section>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # --- Plotly Line Chart: Top 10 Winners ---
-    fig_top = go.Figure()
-
-    CHART_COLORS = [
-        "#1f77b4", "#e45756", "#2ca02c", "#ff7f0e", "#9467bd",
-        "#17becf", "#d62728", "#8c564b", "#e377c2", "#7f7f7f",
-    ]
-
-    for rank, ticker in enumerate(top10_tickers, start=1):
-        ret = final_returns[ticker]
-        fig_top.add_trace(go.Scatter(
-            x=returns.index,
-            y=returns[ticker],
-            mode="lines",
-            name=f"#{rank} {NAME_MAP[ticker]} ({ticker}) {ret:+.2f}%",
-            hovertemplate="%{fullData.name}<extra></extra>",
-            line=dict(width=3, color=CHART_COLORS[(rank - 1) % len(CHART_COLORS)]),
-        ))
-
-    fig_top.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.6)
-
-    fig_top.update_layout(
-        title="Top 10 Stocks In the Money",
-        xaxis_title="",
-        yaxis_title="Total Return (%)",
-        legend_title=dict(text="", font=dict(color="#102018", size=13)),
-        hovermode="x unified",
-        hoverlabel=dict(bgcolor="white", font_color="#102018", font_size=13, bordercolor="#ccc"),
-        height=700,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="#fbfdf9",
-        font=dict(family="Space Grotesk, sans-serif", color="#102018"),
-        title_font=dict(size=18, color="#102018"),
-        legend=dict(orientation="h", yanchor="top", y=-0.15, x=0, xanchor="left", font=dict(color="#102018", size=12)),
-        margin=dict(t=90, r=24, b=200, l=40),
-    )
-    fig_top.update_xaxes(showgrid=False, fixedrange=True, tickfont=dict(color="#102018"), title_font=dict(color="#102018"))
-    fig_top.update_yaxes(gridcolor="rgba(31, 26, 23, 0.12)", zeroline=False, fixedrange=True, tickfont=dict(color="#102018"), title_font=dict(color="#102018"))
-
-    chart_config = {"displayModeBar": False, "scrollZoom": False}
-
-    col1, col2 = st.columns(2)
-
-    col1.plotly_chart(fig_top, use_container_width=True, config=chart_config)
-
-    # --- Plotly Line Chart: Top 10 Losers ---
-    fig_bottom = go.Figure()
-
-    total = len(final_returns)
-    for i, ticker in enumerate(bottom10_tickers):
-        rank = total - len(bottom10_tickers) + i + 1
-        ret = final_returns[ticker]
-        fig_bottom.add_trace(go.Scatter(
-            x=returns.index,
-            y=returns[ticker],
-            mode="lines",
-            name=f"#{rank} {NAME_MAP[ticker]} ({ticker}) {ret:+.2f}%",
-            hovertemplate="%{fullData.name}<extra></extra>",
-            line=dict(width=3, color=CHART_COLORS[i % len(CHART_COLORS)]),
-        ))
-
-    fig_bottom.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.6)
-
-    fig_bottom.update_layout(
-        title="Bottom 10 Stocks Out of the Money",
-        xaxis_title="",
-        yaxis_title="Total Return (%)",
-        legend_title=dict(text="", font=dict(color="#102018", size=13)),
-        hovermode="x unified",
-        hoverlabel=dict(bgcolor="white", font_color="#102018", font_size=13, bordercolor="#ccc"),
-        height=700,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="#fbfdf9",
-        font=dict(family="Space Grotesk, sans-serif", color="#102018"),
-        title_font=dict(size=18, color="#102018"),
-        legend=dict(orientation="h", yanchor="top", y=-0.15, x=0, xanchor="left", font=dict(color="#102018", size=12)),
-        margin=dict(t=90, r=24, b=200, l=40),
-    )
-    fig_bottom.update_xaxes(showgrid=False, fixedrange=True, tickfont=dict(color="#102018"), title_font=dict(color="#102018"))
-    fig_bottom.update_yaxes(gridcolor="rgba(31, 26, 23, 0.12)", zeroline=False, fixedrange=True, tickfont=dict(color="#102018"), title_font=dict(color="#102018"))
-
-    col2.plotly_chart(fig_bottom, use_container_width=True, config=chart_config)
-
-    # --- Leaderboard ---
-    st.markdown("""
-    <section class="section-card">
-      <div class="section-heading">Leaderboard</div>
-      <p class="section-copy"><strong>Price Return (%)</strong> is the percentage change in share price over the period, excluding dividends.</p>
-      <p class="section-copy"><strong>Total Return (%)</strong> is the percentage return including both share price change and dividend payouts.</p>
-    </section>
-    """, unsafe_allow_html=True)
-
-    start_date_label = returns.index[0].strftime("%m/%d/%Y")
-    end_date_label = returns.index[-1].strftime("%m/%d/%Y")
-
-    rows = []
-    for rank, (ticker, ret) in enumerate(final_returns.items(), start=1):
-        # Shares bought with investment
-        share_price = start_prices[ticker]
-        shares = INVESTMENT / share_price
-        # Dividend income for those shares
-        div_per_share = dividends.get(ticker, 0.0)
-        div_income = shares * div_per_share
-        # Market value = shares × current price
-        market_value = shares * end_prices[ticker]
-        # Final value = market value + dividends
-        final_value = market_value + div_income
-        total_return = (final_value / INVESTMENT - 1) * 100
-        profit = final_value - INVESTMENT
-        total_players = len(final_returns)
-        if rank == 1:
-            display_ticker = f"👑 {ticker}"
-        elif rank == total_players:
-            display_ticker = f"💩 {ticker}"
+    @st.fragment(run_every=REFRESH_INTERVAL)
+    def live_dashboard():
+        # --- Live status indicator ---
+        now_et = datetime.datetime.now(ZoneInfo("America/New_York"))
+        timestamp = now_et.strftime("%I:%M:%S %p ET")
+        if is_market_open():
+            st.markdown(
+                f'<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;">'
+                f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#19a05f;'
+                f'box-shadow:0 0 6px #19a05f;"></span>'
+                f'<span style="font-size:0.82rem;color:var(--muted);">'
+                f'<strong style="color:#19a05f;">LIVE</strong> &middot; Updated {timestamp} &middot; Auto-refreshing every 60s'
+                f'</span></div>',
+                unsafe_allow_html=True,
+            )
         else:
-            display_ticker = ticker
-        arrow = "▲" if total_return >= 0 else "▼"
-        rows.append({
-            "Rank": f"{arrow} {rank}",
-            "ETF": ETF_MAP.get(ticker, ""),
-            "Stock": NAME_MAP[ticker],
-            "Ticker": display_ticker,
-            f"Start Price ({start_date_label})": f"${share_price:.2f}",
-            f"End Price ({end_date_label})": f"${end_prices[ticker]:.2f}",
-            "Stake": f"${INVESTMENT:.2f}",
-            f"Units ({start_date_label})": f"{shares:.4f}",
-            "Profit/(Loss)": format_signed_currency(profit),
-            "Market Value": format_signed_currency(market_value),
-            "Dividends": format_signed_currency(div_income),
-            "Price Return (%)": format_signed_percent(ret),
-            "Total Return (%)": format_signed_percent(total_return),
-        })
+            st.markdown(
+                f'<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;">'
+                f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--muted);"></span>'
+                f'<span style="font-size:0.82rem;color:var(--muted);">'
+                f'Market closed &middot; Last updated {timestamp}'
+                f'</span></div>',
+                unsafe_allow_html=True,
+            )
 
-    df = pd.DataFrame(rows)
-    total_rows = max(len(df) - 1, 1)
+        if start_date >= end_date:
+            st.error("Start date must be before end date.")
+            st.stop()
 
-    # Find the first row with a down arrow (negative total return)
-    first_negative_idx = next((i for i, r in enumerate(rows) if r["Rank"].startswith("▼")), None)
+        try:
+            returns, start_prices, end_prices = fetch_returns(TICKERS, start_date, end_date)
+        except Exception as e:
+            st.error(f"Failed to fetch stock data: {e}")
+            st.stop()
 
-    # Build set of matching row indices for search highlight
-    search_matches = set()
-    if roster_search:
-        for i, r in enumerate(rows):
-            ticker_raw = r["Ticker"].replace("👑 ", "").replace("💩 ", "")
-            if roster_search.upper() in ticker_raw.upper() or roster_search.upper() in r["Stock"].upper():
-                search_matches.add(i)
+        if returns is None or returns.empty:
+            st.warning("No data returned for the selected date range.")
+            st.stop()
+
+        # Identify valid vs invalid tickers
+        valid_tickers = [t for t in TICKERS if t in returns.columns and returns[t].notna().any()]
+
+        # Fetch dividends for valid tickers
+        try:
+            dividends = fetch_dividends(valid_tickers, start_date, end_date)
+        except Exception:
+            dividends = {t: 0.0 for t in valid_tickers}
+        invalid_tickers = [t for t in TICKERS if t not in valid_tickers]
+
+        for t in invalid_tickers:
+            st.warning(f"No data for ticker **{t}** ({NAME_MAP[t]}) — excluded from results.")
+
+        if not valid_tickers:
+            st.error("No valid ticker data to display.")
+            st.stop()
+
+        # --- Rank tickers by final return ---
+        final_returns = returns[valid_tickers].iloc[-1].sort_values(ascending=False)
+        top10_tickers = final_returns.head(10).index.tolist()
+        bottom10_tickers = final_returns.tail(10).index.tolist()
+
+        # --- ETF Winner ---
+        ETF_EMOJI = {"UNCL": "👨‍🦳", "ANTY": "👩🏻", "KIDZ": "👶🏻"}
+        etf_sums = {}
+        etf_counts = {}
+        for ticker in valid_tickers:
+            etf = ETF_MAP.get(ticker, "")
+            if etf:
+                etf_sums[etf] = etf_sums.get(etf, 0) + final_returns[ticker]
+                etf_counts[etf] = etf_counts.get(etf, 0) + 1
+        etf_avgs = {etf: etf_sums[etf] / etf_counts[etf] for etf in etf_sums}
+        etf_ranked = sorted(etf_avgs.items(), key=lambda x: x[1], reverse=True)
+        parts = []
+        medals = ["🥇", "🥈", "🥉"]
+        for i, (etf, total) in enumerate(etf_ranked):
+            label = medals[i] if i < len(medals) else ""
+            parts.append(f"{label} {ETF_EMOJI.get(etf, '')} {html_mod.escape(etf)} ({total:+.2f}%)")
+        best_ticker = final_returns.index[0]
+        worst_ticker = final_returns.index[-1]
+        metric_cols = st.columns(2)
+        metric_cols[0].markdown(
+            f"""
+            <div class="metric-card mvp">
+              <div class="metric-label">MVP</div>
+              <div class="metric-value positive">{ETF_EMOJI.get(ETF_MAP.get(best_ticker, ''), '')} {html_mod.escape(best_ticker)}</div>
+              <div class="metric-detail">{html_mod.escape(NAME_MAP[best_ticker])} <span class="positive">{final_returns[best_ticker]:+.2f}%</span></div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        metric_cols[1].markdown(
+            f"""
+            <div class="metric-card bench">
+              <div class="metric-label">Benchwarmer</div>
+              <div class="metric-value negative">{ETF_EMOJI.get(ETF_MAP.get(worst_ticker, ''), '')} {html_mod.escape(worst_ticker)}</div>
+              <div class="metric-detail">{html_mod.escape(NAME_MAP[worst_ticker])} <span class="negative">({abs(final_returns[worst_ticker]):.2f}%)</span></div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            f"""
+            <section class="section-card" style="text-align: center;">
+              <div class="section-heading">ETF Standing ({start_date.strftime('%b %d, %Y')} – {end_date.strftime('%b %d, %Y')})</div>
+              {''.join(f'<p class="section-copy">{p}</p>' for p in parts)}
+            </section>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # --- Plotly Line Chart: Top 10 Winners ---
+        fig_top = go.Figure()
+
+        CHART_COLORS = [
+            "#1f77b4", "#e45756", "#2ca02c", "#ff7f0e", "#9467bd",
+            "#17becf", "#d62728", "#8c564b", "#e377c2", "#7f7f7f",
+        ]
+
+        for rank, ticker in enumerate(top10_tickers, start=1):
+            ret = final_returns[ticker]
+            fig_top.add_trace(go.Scatter(
+                x=returns.index,
+                y=returns[ticker],
+                mode="lines",
+                name=f"#{rank} {NAME_MAP[ticker]} ({ticker}) {ret:+.2f}%",
+                hovertemplate="%{fullData.name}<extra></extra>",
+                line=dict(width=3, color=CHART_COLORS[(rank - 1) % len(CHART_COLORS)]),
+            ))
+
+        fig_top.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.6)
+
+        fig_top.update_layout(
+            title="Top 10 Stocks In the Money",
+            xaxis_title="",
+            yaxis_title="Total Return (%)",
+            legend_title=dict(text="", font=dict(color="#102018", size=13)),
+            hovermode="x unified",
+            hoverlabel=dict(bgcolor="white", font_color="#102018", font_size=13, bordercolor="#ccc"),
+            height=700,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="#fbfdf9",
+            font=dict(family="Space Grotesk, sans-serif", color="#102018"),
+            title_font=dict(size=18, color="#102018"),
+            legend=dict(orientation="h", yanchor="top", y=-0.15, x=0, xanchor="left", font=dict(color="#102018", size=12)),
+            margin=dict(t=90, r=24, b=200, l=40),
+        )
+        fig_top.update_xaxes(showgrid=False, fixedrange=True, tickfont=dict(color="#102018"), title_font=dict(color="#102018"))
+        fig_top.update_yaxes(gridcolor="rgba(31, 26, 23, 0.12)", zeroline=False, fixedrange=True, tickfont=dict(color="#102018"), title_font=dict(color="#102018"))
+
+        chart_config = {"displayModeBar": False, "scrollZoom": False}
+
+        col1, col2 = st.columns(2)
+
+        col1.plotly_chart(fig_top, use_container_width=True, config=chart_config)
+
+        # --- Plotly Line Chart: Top 10 Losers ---
+        fig_bottom = go.Figure()
+
+        total = len(final_returns)
+        for i, ticker in enumerate(bottom10_tickers):
+            rank = total - len(bottom10_tickers) + i + 1
+            ret = final_returns[ticker]
+            fig_bottom.add_trace(go.Scatter(
+                x=returns.index,
+                y=returns[ticker],
+                mode="lines",
+                name=f"#{rank} {NAME_MAP[ticker]} ({ticker}) {ret:+.2f}%",
+                hovertemplate="%{fullData.name}<extra></extra>",
+                line=dict(width=3, color=CHART_COLORS[i % len(CHART_COLORS)]),
+            ))
+
+        fig_bottom.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.6)
+
+        fig_bottom.update_layout(
+            title="Bottom 10 Stocks Out of the Money",
+            xaxis_title="",
+            yaxis_title="Total Return (%)",
+            legend_title=dict(text="", font=dict(color="#102018", size=13)),
+            hovermode="x unified",
+            hoverlabel=dict(bgcolor="white", font_color="#102018", font_size=13, bordercolor="#ccc"),
+            height=700,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="#fbfdf9",
+            font=dict(family="Space Grotesk, sans-serif", color="#102018"),
+            title_font=dict(size=18, color="#102018"),
+            legend=dict(orientation="h", yanchor="top", y=-0.15, x=0, xanchor="left", font=dict(color="#102018", size=12)),
+            margin=dict(t=90, r=24, b=200, l=40),
+        )
+        fig_bottom.update_xaxes(showgrid=False, fixedrange=True, tickfont=dict(color="#102018"), title_font=dict(color="#102018"))
+        fig_bottom.update_yaxes(gridcolor="rgba(31, 26, 23, 0.12)", zeroline=False, fixedrange=True, tickfont=dict(color="#102018"), title_font=dict(color="#102018"))
+
+        col2.plotly_chart(fig_bottom, use_container_width=True, config=chart_config)
+
+        # --- Leaderboard ---
+        st.markdown("""
+        <section class="section-card">
+          <div class="section-heading">Leaderboard</div>
+          <p class="section-copy"><strong>Price Return (%)</strong> is the percentage change in share price over the period, excluding dividends.</p>
+          <p class="section-copy"><strong>Total Return (%)</strong> is the percentage return including both share price change and dividend payouts.</p>
+        </section>
+        """, unsafe_allow_html=True)
+
+        start_date_label = returns.index[0].strftime("%m/%d/%Y")
+        end_date_label = returns.index[-1].strftime("%m/%d/%Y")
+
+        rows = []
+        for rank, (ticker, ret) in enumerate(final_returns.items(), start=1):
+            # Shares bought with investment
+            share_price = start_prices[ticker]
+            shares = INVESTMENT / share_price
+            # Dividend income for those shares
+            div_per_share = dividends.get(ticker, 0.0)
+            div_income = shares * div_per_share
+            # Market value = shares × current price
+            market_value = shares * end_prices[ticker]
+            # Final value = market value + dividends
+            final_value = market_value + div_income
+            total_return = (final_value / INVESTMENT - 1) * 100
+            profit = final_value - INVESTMENT
+            total_players = len(final_returns)
+            if rank == 1:
+                display_ticker = f"👑 {ticker}"
+            elif rank == total_players:
+                display_ticker = f"💩 {ticker}"
+            else:
+                display_ticker = ticker
+            arrow = "▲" if total_return >= 0 else "▼"
+            rows.append({
+                "Rank": f"{arrow} {rank}",
+                "ETF": ETF_MAP.get(ticker, ""),
+                "Stock": NAME_MAP[ticker],
+                "Ticker": display_ticker,
+                f"Start Price ({start_date_label})": f"${share_price:.2f}",
+                f"End Price ({end_date_label})": f"${end_prices[ticker]:.2f}",
+                "Stake": f"${INVESTMENT:.2f}",
+                f"Units ({start_date_label})": f"{shares:.4f}",
+                "Profit/(Loss)": format_signed_currency(profit),
+                "Market Value": format_signed_currency(market_value),
+                "Dividends": format_signed_currency(div_income),
+                "Price Return (%)": format_signed_percent(ret),
+                "Total Return (%)": format_signed_percent(total_return),
+            })
+
+        df = pd.DataFrame(rows)
+        total_rows = max(len(df) - 1, 1)
+
+        # Find the first row with a down arrow (negative total return)
+        first_negative_idx = next((i for i, r in enumerate(rows) if r["Rank"].startswith("▼")), None)
+
+        # Build set of matching row indices for search highlight
+        search_matches = set()
+        if roster_search:
+            for i, r in enumerate(rows):
+                ticker_raw = r["Ticker"].replace("👑 ", "").replace("💩 ", "")
+                if roster_search.upper() in ticker_raw.upper() or roster_search.upper() in r["Stock"].upper():
+                    search_matches.add(i)
 
 
-    def leaderboard_row_style(row):
-        fraction = row.name / total_rows
-        color = interpolate_hex_color("#19a05f", "#d14a34", fraction)
-        styles = [f"color: {color};"] * len(row)
-        if row.name == first_negative_idx:
-            styles = [s + " border-top: 3px solid #102018;" for s in styles]
-        if row.name in search_matches:
-            styles = [s + " background-color: rgba(215, 168, 58, 0.3);" for s in styles]
-        return styles
+        def leaderboard_row_style(row):
+            fraction = row.name / total_rows
+            color = interpolate_hex_color("#19a05f", "#d14a34", fraction)
+            styles = [f"color: {color};"] * len(row)
+            if row.name == first_negative_idx:
+                styles = [s + " border-top: 3px solid #102018;" for s in styles]
+            if row.name in search_matches:
+                styles = [s + " background-color: rgba(215, 168, 58, 0.3);" for s in styles]
+            return styles
 
 
-    styled_df = (
-        df.style
-        .hide(axis="index")
-        .set_table_attributes('class="leaderboard"')
-        .apply(leaderboard_row_style, axis=1)
-    )
-    st.markdown(f'<div style="overflow-x: auto;">{styled_df.to_html(escape=True)}</div>', unsafe_allow_html=True)
+        styled_df = (
+            df.style
+            .hide(axis="index")
+            .set_table_attributes('class="leaderboard"')
+            .apply(leaderboard_row_style, axis=1)
+        )
+        st.markdown(f'<div style="overflow-x: auto;">{styled_df.to_html(escape=True)}</div>', unsafe_allow_html=True)
 
-    # --- Subscribe ---
-    st.markdown("---")
+        # --- Subscribe ---
+        st.markdown("---")
+
+    live_dashboard()
 
 with tab_admin:
     if not st.session_state.admin_authenticated:
