@@ -1040,13 +1040,13 @@ with tab_dashboard:
             prev_rank = prev_ranks.get(ticker, rank)
             rank_diff = prev_rank - rank  # positive = moved up, negative = moved down
             if rank_diff > 0:
-                arrow = '<span style="color:#19a05f;font-size:14px;">▲</span>'
+                arrow = '<span style="color:#19a05f;font-size:12px;">▲</span>'
             elif rank_diff < 0:
-                arrow = '<span style="color:#d14a34;font-size:14px;">▼</span>'
+                arrow = '<span style="color:#d14a34;font-size:12px;">▼</span>'
             else:
-                arrow = '<span style="color:#4a90d9;font-size:14px;display:inline-block;transform:rotate(90deg);">▲</span>'
+                arrow = '<span style="color:#102018;font-size:12px;display:inline-block;transform:rotate(90deg);">▲</span>'
             rows.append({
-                "Rank": f"{arrow} {rank}",
+                "Rank": f'<span style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">{arrow} {rank}</span>',
                 "ETF": ETF_MAP.get(ticker, ""),
                 "Stock": NAME_MAP[ticker],
                 "Ticker": display_ticker,
