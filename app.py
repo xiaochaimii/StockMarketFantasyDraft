@@ -1010,11 +1010,12 @@ with tab_dashboard:
         start_date_label = returns.index[0].strftime("%m/%d/%Y")
         end_date_label = returns.index[-1].strftime("%m/%d/%Y")
 
-        # Compute rank changes vs previous refresh
-        current_ranks = {ticker: rank for rank, ticker in enumerate(final_returns.index, start=1)}
-        prev_ranks = st.session_state.get("prev_ranks", {})
-        # Update session state with current rankings for next refresh
-        st.session_state["prev_ranks"] = current_ranks
+        # Compute rank changes vs yesterday's standing
+        if len(returns) >= 2:
+            prev_returns = returns[valid_tickers].iloc[-2].sort_values(ascending=False)
+            prev_ranks = {ticker: rank for rank, ticker in enumerate(prev_returns.index, start=1)}
+        else:
+            prev_ranks = {}
 
         rows = []
         for rank, (ticker, ret) in enumerate(final_returns.items(), start=1):
