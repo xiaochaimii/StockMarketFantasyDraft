@@ -1040,11 +1040,11 @@ with tab_dashboard:
             prev_rank = prev_ranks.get(ticker, rank)
             rank_diff = prev_rank - rank  # positive = moved up, negative = moved down
             if rank_diff > 0:
-                arrow = "▲"
+                arrow = '<span style="color:#19a05f;font-size:14px;">▲</span>'
             elif rank_diff < 0:
-                arrow = "▼"
+                arrow = '<span style="color:#d14a34;font-size:14px;">▼</span>'
             else:
-                arrow = "▸"
+                arrow = '<span style="color:#4a90d9;font-size:14px;">▶</span>'
             rows.append({
                 "Rank": f"{arrow} {rank}",
                 "ETF": ETF_MAP.get(ticker, ""),
@@ -1065,7 +1065,7 @@ with tab_dashboard:
         total_rows = max(len(df) - 1, 1)
 
         # Find the first row with negative total return
-        first_negative_idx = next((i for i, r in enumerate(rows) if r["Total Return (%)"].startswith("−") or r["Total Return (%)"].startswith("-")), None)
+        first_negative_idx = next((i for i, r in enumerate(rows) if r["Total Return (%)"].startswith("(")), None)
 
         # Build set of matching row indices for search highlight
         search_matches = set()
@@ -1093,7 +1093,7 @@ with tab_dashboard:
             .set_table_attributes('class="leaderboard"')
             .apply(leaderboard_row_style, axis=1)
         )
-        st.markdown(f'<div style="overflow-x: auto;">{styled_df.to_html(escape=True)}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="overflow-x: auto;">{styled_df.to_html(escape=False)}</div>', unsafe_allow_html=True)
 
         # --- Subscribe ---
         st.markdown("---")
