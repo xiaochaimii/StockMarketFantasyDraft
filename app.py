@@ -1009,6 +1009,13 @@ with tab_dashboard:
         start_date_label = returns.index[0].strftime("%m/%d/%Y")
         end_date_label = returns.index[-1].strftime("%m/%d/%Y")
 
+        # Compute previous day's rankings for rank change arrows
+        if len(returns) >= 2:
+            prev_returns = returns[valid_tickers].iloc[-2].sort_values(ascending=False)
+            prev_ranks = {ticker: rank for rank, ticker in enumerate(prev_returns.index, start=1)}
+        else:
+            prev_ranks = {}
+
         rows = []
         for rank, (ticker, ret) in enumerate(final_returns.items(), start=1):
             # Shares bought with investment
@@ -1030,7 +1037,14 @@ with tab_dashboard:
                 display_ticker = f"💩 {ticker}"
             else:
                 display_ticker = ticker
-            arrow = "▲" if total_return >= 0 else "▼"
+            prev_rank = prev_ranks.get(ticker, rank)
+            rank_diff = prev_rank - rank  # positive = moved up, negative = moved down
+            if rank_diff > 0:
+                arrow = "▲"
+            elif rank_diff < 0:
+                arrow = "▼"
+            else:
+                arrow = "▸"
             rows.append({
                 "Rank": f"{arrow} {rank}",
                 "ETF": ETF_MAP.get(ticker, ""),
@@ -1050,8 +1064,8 @@ with tab_dashboard:
         df = pd.DataFrame(rows)
         total_rows = max(len(df) - 1, 1)
 
-        # Find the first row with a down arrow (negative total return)
-        first_negative_idx = next((i for i, r in enumerate(rows) if r["Rank"].startswith("▼")), None)
+        # Find the first row with negative total return
+        first_negative_idx = next((i for i, r in enumerate(rows) if r["Total Return (%)"].startswith("−") or r["Total Return (%)"].startswith("-")), None)
 
         # Build set of matching row indices for search highlight
         search_matches = set()
