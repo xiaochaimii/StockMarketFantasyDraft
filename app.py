@@ -746,13 +746,14 @@ with tab_dashboard:
         if is_market_open():
             countdown_iframe = (
                 '<iframe srcdoc="'
-                '<body style=&quot;margin:0;padding:0;overflow:hidden;background:transparent;&quot;>'
-                '<span id=&quot;c&quot; style=&quot;font-family:-apple-system,BlinkMacSystemFont,sans-serif;'
-                'font-size:0.72rem;color:#aaa;&quot;>(60s)</span>'
+                '<body style=&quot;margin:0;padding:0;overflow:hidden;background:transparent;'
+                'font-size:12.5px;line-height:1;&quot;>'
+                '<span id=&quot;c&quot; style=&quot;font-family:Space Grotesk,-apple-system,BlinkMacSystemFont,sans-serif;'
+                'font-size:12.5px;color:#aaa;&quot;>(60s)</span>'
                 '<script>var e=document.getElementById(&quot;c&quot;),s=60;'
                 'setInterval(function(){s--;e.textContent=s>0?&quot;(&quot;+s+&quot;s)&quot;:&quot;(refreshing…)&quot;;},1000);'
                 '</script></body>'
-                '" style="border:none;width:65px;height:1.1em;vertical-align:middle;'
+                '" style="border:none;width:65px;height:16px;vertical-align:baseline;'
                 'overflow:hidden;background:transparent;" scrolling="no"></iframe>'
             )
             st.markdown(
