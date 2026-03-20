@@ -474,19 +474,51 @@ hr {
     border-radius: 6px;
     height: 1.5rem;
     overflow: hidden;
+    position: relative;
+    display: flex;
+}
+.etf-bar-bg::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 2px;
+    bottom: 2px;
+    width: 1px;
+    background: rgba(128, 128, 128, 0.35);
+    z-index: 1;
+}
+.etf-bar-half {
+    width: 50%;
+    height: 100%;
+    display: flex;
+    overflow: hidden;
+}
+.etf-bar-half.left {
+    justify-content: flex-end;
+}
+.etf-bar-half.right {
+    justify-content: flex-start;
 }
 .etf-bar {
     height: 100%;
     border-radius: 6px;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    padding-right: 0.5rem;
     font-size: 0.72rem;
     font-weight: 700;
     color: #fff;
     min-width: 3rem;
     transition: width 0.4s ease;
+}
+.etf-bar.neg {
+    justify-content: flex-start;
+    padding-left: 0.4rem;
+    border-radius: 6px 0 0 6px;
+}
+.etf-bar.pos {
+    justify-content: flex-end;
+    padding-right: 0.4rem;
+    border-radius: 0 6px 6px 0;
 }
 
 </style>
@@ -757,14 +789,27 @@ with tab_dashboard:
         for i, (etf, avg_ret) in enumerate(etf_ranked):
             medal = medals[i] if i < len(medals) else ""
             emoji = ETF_EMOJI.get(etf, "")
-            bar_width = max(int(abs(avg_ret) / max_etf_val * 100), 8)
+            bar_pct = max(int(abs(avg_ret) / max_etf_val * 100), 12)
             bar_color = "var(--accent)" if avg_ret >= 0 else "var(--negative)"
+            if avg_ret >= 0:
+                left_half = '<div class="etf-bar-half left"></div>'
+                right_half = (
+                    f'<div class="etf-bar-half right">'
+                    f'<div class="etf-bar pos" style="width:{bar_pct}%;background:{bar_color};">{avg_ret:+.2f}%</div>'
+                    f'</div>'
+                )
+            else:
+                left_half = (
+                    f'<div class="etf-bar-half left">'
+                    f'<div class="etf-bar neg" style="width:{bar_pct}%;background:{bar_color};">{avg_ret:+.2f}%</div>'
+                    f'</div>'
+                )
+                right_half = '<div class="etf-bar-half right"></div>'
             etf_bar_html += (
                 f'<div class="etf-row">'
                 f'<span class="etf-label">{medal} {emoji} {html_mod.escape(etf)}</span>'
-                f'<div class="etf-bar-bg">'
-                f'<div class="etf-bar" style="width:{bar_width}%;background:{bar_color};">{avg_ret:+.2f}%</div>'
-                f'</div></div>'
+                f'<div class="etf-bar-bg">{left_half}{right_half}</div>'
+                f'</div>'
             )
         metric_cols[2].markdown(
             f"""
