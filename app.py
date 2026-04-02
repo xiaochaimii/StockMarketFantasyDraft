@@ -1091,6 +1091,7 @@ with tab_dashboard:
               <div class="metric-value positive">{ETF_EMOJI.get(ETF_MAP.get(best_ticker, ''), '')} {html_mod.escape(best_ticker)}</div>
               <div class="metric-detail">{html_mod.escape(NAME_MAP[best_ticker])} <span class="positive">{final_returns[best_ticker]:+.2f}%</span></div>
               <div class="metric-detail">🔥 {throne['mvp_streak']} day streak</div>
+              <div class="metric-detail" style="font-size:0.75rem;opacity:0.7;">Highest total return</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1102,6 +1103,7 @@ with tab_dashboard:
               <div class="metric-value negative">{ETF_EMOJI.get(ETF_MAP.get(worst_ticker, ''), '')} {html_mod.escape(worst_ticker)}</div>
               <div class="metric-detail">{html_mod.escape(NAME_MAP[worst_ticker])} <span class="negative">({abs(final_returns[worst_ticker]):.2f}%)</span></div>
               <div class="metric-detail">📉 {throne['bench_streak']} day streak</div>
+              <div class="metric-detail" style="font-size:0.75rem;opacity:0.7;">Lowest total return</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1659,24 +1661,105 @@ with tab_admin:
                 filtered = filtered[:20]
 
                 if filtered:
-                    for _, s, claimed in filtered:
-                        sym = s["symbol"]
-                        name = s["name"]
-                        if claimed:
-                            st.markdown(f"**{sym}** — {name} &nbsp; `Claimed - {claimed_tickers[sym]}`")
-                        else:
-                            col_info, col_btn = st.columns([3, 1])
-                            with col_info:
-                                st.markdown(f"**{sym}** — {name}")
-                            with col_btn:
-                                if new_etf:
-                                    if st.button("Add", key=f"add_{sym}"):
-                                        config["players"].append({"etf": new_etf, "name": name, "ticker": sym})
-                                        with open("players.json", "w") as f:
-                                            json.dump(config, f, indent=2)
-                                        st.rerun()
+                    # Separate available and claimed
+                    available = [(p, s, c) for p, s, c in filtered if not c]
+                    claimed_list = [(p, s, c) for p, s, c in filtered if c]
+
+                    # Fetch prices: current for available, entry for claimed
+                    all_syms = [s["symbol"] for _, s, _ in filtered]
+                    fetched_prices = {}
+                    if all_syms:
+                        try:
+                            # Current prices
+                            cur_data = yf.download(all_syms, period="1d", progress=False)
+                            if not cur_data.empty:
+                                adj = cur_data["Adj Close"] if "Adj Close" in cur_data.columns else cur_data["Close"]
+                                if isinstance(adj, pd.Series):
+                                    fetched_prices[all_syms[0]] = {"current": adj.iloc[-1]}
                                 else:
-                                    st.button("Add", key=f"add_{sym}", disabled=True, help="Select an ETF first")
+                                    for t in all_syms:
+                                        if t in adj.columns and not adj[t].dropna().empty:
+                                            fetched_prices[t] = {"current": adj[t].dropna().iloc[-1]}
+                        except Exception:
+                            pass
+
+                    # Entry prices for claimed
+                    claimed_syms = [s["symbol"] for _, s, _ in claimed_list]
+                    if claimed_syms:
+                        try:
+                            entry_data = yf.download(claimed_syms, start=start_date, end=start_date + timedelta(days=7), progress=False)
+                            if not entry_data.empty:
+                                adj = entry_data["Adj Close"] if "Adj Close" in entry_data.columns else entry_data["Close"]
+                                if isinstance(adj, pd.Series):
+                                    fetched_prices.setdefault(claimed_syms[0], {})["entry"] = adj.iloc[0]
+                                else:
+                                    for t in claimed_syms:
+                                        if t in adj.columns and not adj[t].dropna().empty:
+                                            fetched_prices.setdefault(t, {})["entry"] = adj[t].dropna().iloc[0]
+                        except Exception:
+                            pass
+
+                    ETF_EMOJI_ADMIN = {"UNCL": "👨‍🦳", "ANTY": "👩🏻", "KIDZ": "👶🏻"}
+
+                    # Show claimed stocks first
+                    if claimed_list:
+                        for _, s, _ in claimed_list:
+                            sym = s["symbol"]
+                            name = s["name"]
+                            etf_label = claimed_tickers[sym]
+                            etf_emoji = ETF_EMOJI_ADMIN.get(etf_label, "")
+                            prices = fetched_prices.get(sym, {})
+                            entry_price = prices.get("entry")
+                            cur_price = prices.get("current")
+                            details = ""
+                            if entry_price:
+                                shares = INVESTMENT / entry_price
+                                parts = [f"Entry: ${entry_price:.2f}", f"${INVESTMENT:.0f} invested", f"{shares:.4f} shares"]
+                                if cur_price:
+                                    mkt_val = shares * cur_price
+                                    pnl = mkt_val - INVESTMENT
+                                    pnl_color = "#19a05f" if pnl >= 0 else "#d14a34"
+                                    parts.append(f'P/L: <span style="color:{pnl_color}">${pnl:+.2f}</span>')
+                                details = f'<div style="font-size:0.8rem;color:#666;margin-top:0.3rem;">{" &middot; ".join(parts)}</div>'
+                            st.markdown(
+                                f'<div style="background:rgba(209,74,52,0.06);border:1px solid rgba(209,74,52,0.2);border-radius:12px;padding:0.6rem 0.8rem;margin-bottom:0.4rem;">'
+                                f'<div style="display:flex;justify-content:space-between;align-items:center;">'
+                                f'<span><strong>{html_mod.escape(sym)}</strong> — {html_mod.escape(name)}</span>'
+                                f'<span style="background:#d14a34;color:#fff;font-size:0.7rem;padding:2px 8px;border-radius:10px;font-weight:600;">Claimed {etf_emoji} {html_mod.escape(etf_label)}</span>'
+                                f'</div>'
+                                f'{details}'
+                                f'</div>',
+                                unsafe_allow_html=True,
+                            )
+
+                    # Show available stocks below
+                    if available:
+                        if claimed_list:
+                            st.markdown('<div style="border-top:1px solid var(--border);margin:0.5rem 0;"></div>', unsafe_allow_html=True)
+                        for _, s, _ in available:
+                            sym = s["symbol"]
+                            name = s["name"]
+                            prices = fetched_prices.get(sym, {})
+                            cur_price = prices.get("current")
+                            price_line = f'<div style="font-size:0.8rem;color:#666;margin-top:0.3rem;">Current: ${cur_price:.2f}</div>' if cur_price else ""
+                            st.markdown(
+                                f'<div style="background:rgba(242,248,241,0.7);border:1px solid var(--border);border-radius:12px;padding:0.6rem 0.8rem;margin-bottom:0.4rem;">'
+                                f'<div style="display:flex;justify-content:space-between;align-items:center;">'
+                                f'<span><strong>{html_mod.escape(sym)}</strong> — {html_mod.escape(name)}</span>'
+                                f'<span style="background:#19a05f;color:#fff;font-size:0.7rem;padding:2px 8px;border-radius:10px;font-weight:600;">Available</span>'
+                                f'</div>'
+                                f'{price_line}'
+                                f'</div>',
+                                unsafe_allow_html=True,
+                            )
+                            if new_etf:
+                                if st.button("Add", key=f"add_{sym}", use_container_width=True):
+                                    config["players"].append({"etf": new_etf, "name": name, "ticker": sym})
+                                    with open("players.json", "w") as f:
+                                        json.dump(config, f, indent=2)
+                                    st.rerun()
+                            else:
+                                st.button("Add", key=f"add_{sym}", disabled=True, help="Select an ETF first", use_container_width=True)
                 else:
                     st.info("No stocks found matching your search.")
 
