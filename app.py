@@ -1966,7 +1966,7 @@ with tab_dashboard:
                 unsafe_allow_html=True,
             )
 
-        metric_cols = st.columns(4)
+        metric_cols = st.columns(3)
         metric_cols[0].markdown(
             f"""
             <div class="metric-card mvp">
@@ -2030,28 +2030,6 @@ with tab_dashboard:
             unsafe_allow_html=True,
         )
 
-        sw = throne["streak_winner"]
-        if sw["ticker"]:
-            sw_ticker = sw["ticker"]
-            is_mvp = sw["type"] == "mvp"
-            sw_emoji = "🔥" if is_mvp else "📉"
-            sw_class = "positive" if is_mvp else "negative"
-            sw_label = "MVP" if is_mvp else "Benchwarmer"
-            sw_start = sw["start"].strftime("%b %d") if hasattr(sw["start"], "strftime") else str(sw["start"])
-            sw_end = sw["end"].strftime("%b %d") if hasattr(sw["end"], "strftime") else str(sw["end"])
-            metric_cols[3].markdown(
-                f"""
-                <div class="metric-card" style="height:100%;">
-                  <div class="metric-label">Streak Winner</div>
-                  <div class="metric-value {sw_class}">{ETF_EMOJI.get(ETF_MAP.get(sw_ticker, ''), '')} {html_mod.escape(sw_ticker)}</div>
-                  <div class="metric-detail">{html_mod.escape(NAME_MAP.get(sw_ticker, sw_ticker))}</div>
-                  <div class="metric-detail">{sw_emoji} {sw['streak']} day {sw_label} streak</div>
-                  <div class="metric-detail" style="font-size:0.75rem;opacity:0.7;">{sw_start} – {sw_end}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
         # --- Superlatives Section ---
         st.markdown("#### \U0001f3c6 Bragging Rights")
         sup = superlatives
@@ -2065,21 +2043,46 @@ with tab_dashboard:
         # Build badges as opposite pairs
         badges_data = []  # (icon, name, holder, desc)
 
-        # Pair 1: Diamond Hands vs Bag Holder
+        # Pair 1: Diamond Hands vs Bag Holder (with date ranges)
         diamond = _find_badge("Diamond Hands")
         bottom = _find_badge("Bottom Feeder")
         if diamond and diamond["unlocked"]:
-            badges_data.append(("\U0001f48e", "Diamond Hands", diamond["holder"], "Most days as MVP"))
+            # Find first and last date this stock was MVP
+            dh_ticker = diamond["holder"].split(" (")[0]
+            if len(returns) > 1:
+                daily_mvp = returns[valid_tickers].iloc[1:].idxmax(axis=1)
+                dh_dates = daily_mvp[daily_mvp == dh_ticker].index
+                if len(dh_dates) > 0:
+                    dh_first = dh_dates[0].strftime("%b %d")
+                    dh_last = dh_dates[-1].strftime("%b %d")
+                    badges_data.append(("\U0001f48e", "Diamond Hands", f'{diamond["holder"]}, {dh_first} \u2013 {dh_last}', "Most days as MVP"))
+                else:
+                    badges_data.append(("\U0001f48e", "Diamond Hands", diamond["holder"], "Most days as MVP"))
+            else:
+                badges_data.append(("\U0001f48e", "Diamond Hands", diamond["holder"], "Most days as MVP"))
         if bottom and bottom["unlocked"]:
-            badges_data.append(("\U0001f9fb", "Bag Holder", bottom["holder"], "Most days as benchwarmer"))
+            bh_ticker = bottom["holder"].split(" (")[0]
+            if len(returns) > 1:
+                daily_bench = returns[valid_tickers].iloc[1:].idxmin(axis=1)
+                bh_dates = daily_bench[daily_bench == bh_ticker].index
+                if len(bh_dates) > 0:
+                    bh_first = bh_dates[0].strftime("%b %d")
+                    bh_last = bh_dates[-1].strftime("%b %d")
+                    badges_data.append(("\U0001f9fb", "Bag Holder", f'{bottom["holder"]}, {bh_first} \u2013 {bh_last}', "Most days as benchwarmer"))
+                else:
+                    badges_data.append(("\U0001f9fb", "Bag Holder", bottom["holder"], "Most days as benchwarmer"))
+            else:
+                badges_data.append(("\U0001f9fb", "Bag Holder", bottom["holder"], "Most days as benchwarmer"))
 
         # Pair 2: Moonshot vs Crash Landing
         bd = sup.get("best_day")
         wd = sup.get("worst_day")
         if bd:
-            badges_data.append(("\U0001f315", "Moonshot", f'{bd["ticker"]} ({bd["change"]:+.2f}%)', "Biggest single-day gain"))
+            bd_date = bd["date"].strftime("%b %d") if hasattr(bd["date"], "strftime") else str(bd["date"])
+            badges_data.append(("\U0001f315", "Moonshot", f'{bd["ticker"]} ({bd["change"]:+.2f}% on {bd_date})', "Biggest single-day gain"))
         if wd:
-            badges_data.append(("\U0001f4a5", "Crash Landing", f'{wd["ticker"]} ({wd["change"]:+.2f}%)', "Biggest single-day loss"))
+            wd_date = wd["date"].strftime("%b %d") if hasattr(wd["date"], "strftime") else str(wd["date"])
+            badges_data.append(("\U0001f4a5", "Crash Landing", f'{wd["ticker"]} ({wd["change"]:+.2f}% on {wd_date})', "Biggest single-day loss"))
 
         # Pair 3: Rollercoaster vs Steady Eddie
         coaster = _find_badge("Rollercoaster")
@@ -2092,12 +2095,13 @@ with tab_dashboard:
         # Pair 4: Comeback Kid vs Dead Weight
         cb = sup["comeback"]
         if cb["ticker"]:
-            badges_data.append(("\U0001f9d7", "Comeback Kid", f'{cb["ticker"]} (+{cb["recovery"]:.1f}pp)', "Biggest recovery from a low"))
+            badges_data.append(("\U0001f9d7", "Comeback Kid", f'{cb["ticker"]} ({cb["low"]:+.2f}% \u2192 {cb["final"]:+.2f}%)', "Biggest recovery from a low"))
         # Dead Weight: stock that went negative and stayed there (worst current return)
         negative_tickers = [t for t in valid_tickers if final_returns[t] < 0]
         if negative_tickers:
             dead_weight = min(negative_tickers, key=lambda t: final_returns[t])
-            badges_data.append(("\U0001faa8", "Dead Weight", f'{dead_weight} ({final_returns[dead_weight]:+.2f}%)', "Went down and stayed down"))
+            dw_low = float(returns[dead_weight].min())
+            badges_data.append(("\U0001faa8", "Dead Weight", f'{dead_weight} ({dw_low:+.2f}% \u2192 {final_returns[dead_weight]:+.2f}%)', "Went down and stayed down"))
 
         # Pair 5: The Terminator vs Middle Child
         term = _find_badge("The Terminator")
@@ -2244,6 +2248,169 @@ with tab_dashboard:
             f'</div>',
             unsafe_allow_html=True,
         )
+
+        # --- Shots Fired ---
+        st.markdown("#### \U0001f4a5 Shots Fired")
+
+        def _generate_roasts(final_rets, name_map, throne, superlatives, returns_df, valid_tickers):
+            roasts = []
+            sorted_rets = final_rets.sort_values(ascending=False)
+            total = len(sorted_rets)
+            mvp = sorted_rets.index[0]
+            mvp_ret = sorted_rets.iloc[0]
+            bench = sorted_rets.index[-1]
+            bench_ret = sorted_rets.iloc[-1]
+
+            mvp_roasts = [
+                f"<b>{html_mod.escape(mvp)}</b> is up {mvp_ret:+.2f}% and won't shut up about it. We get it, you're winning.",
+                f"<b>{html_mod.escape(mvp)}</b> at {mvp_ret:+.2f}%? Enjoy it while it lasts. The market humbles everyone.",
+                f"<b>{html_mod.escape(mvp)}</b> is carrying this entire draft at {mvp_ret:+.2f}%. The rest of you are just background noise.",
+            ]
+            bench_roasts = [
+                f"<b>{html_mod.escape(bench)}</b> at {bench_ret:+.2f}%. If this were a group project, you'd be the one who didn't show up.",
+                f"<b>{html_mod.escape(bench)}</b> is at {bench_ret:+.2f}%. Even a random number generator would do better.",
+                f"<b>{html_mod.escape(bench)}</b> at {bench_ret:+.2f}%. At this rate, you could lose money slower by literally burning it.",
+            ]
+            day_seed = int(hashlib.md5(datetime.date.today().isoformat().encode()).hexdigest(), 16)
+            roasts.append(f"\U0001f451 {mvp_roasts[day_seed % len(mvp_roasts)]}")
+            roasts.append(f"\U0001f4a9 {bench_roasts[(day_seed + 1) % len(bench_roasts)]}")
+
+            if superlatives.get("best_day") and superlatives.get("worst_day"):
+                bd = superlatives["best_day"]
+                wd = superlatives["worst_day"]
+                if bd["ticker"] == wd["ticker"]:
+                    roasts.append(f"\U0001f3a2 <b>{html_mod.escape(bd['ticker'])}</b> gained {bd['change']:+.2f}% and lost {wd['change']:+.2f}% in single days. This stock needs therapy.")
+                else:
+                    roasts.append(f"\U0001f3a2 <b>{html_mod.escape(wd['ticker'])}</b> nosedived {wd['change']:+.2f}% in one day. That's not investing, that's bungee jumping without the cord.")
+
+            mc = superlatives.get("middle")
+            if mc and mc["ticker"]:
+                roasts.append(f"\U0001fae5 <b>{html_mod.escape(mc['ticker'])}</b> returned {mc['return']:+.2f}%. Absolute NPC energy. Doing nothing and hoping nobody notices.")
+
+            cb = superlatives.get("comeback")
+            if cb and cb["ticker"] and cb["low"] < -3:
+                roasts.append(f"\U0001f9d7 <b>{html_mod.escape(cb['ticker'])}</b> dropped to {cb['low']:+.2f}% and somehow clawed back. Plot armor is real.")
+
+            bottom3 = sorted_rets.tail(3)
+            tickers_str = ", ".join(f"<b>{html_mod.escape(t)}</b>" for t in bottom3.index)
+            bottom3_roasts = [
+                f"\U0001f6bd {tickers_str} \u2014 the bottom 3. Combined return: {bottom3.sum():+.2f}%. A dumpster fire would've outperformed.",
+                f"\U0001f6bd {tickers_str} sitting at the bottom with {bottom3.sum():+.2f}% combined. If losing money was a sport, you'd be olympians.",
+            ]
+            roasts.append(bottom3_roasts[(day_seed + 2) % len(bottom3_roasts)])
+
+            mvp_changes = len([e for e in throne["mvp_history"] if e.get("prev_ticker")])
+            if mvp_changes >= 4:
+                roasts.append(f"\U0001f3b0 The MVP throne changed hands {mvp_changes} times. This draft has more drama than a reality TV show.")
+            elif mvp_changes <= 1:
+                roasts.append(f"\U0001f3b0 <b>{html_mod.escape(mvp)}</b> has basically owned the throne the whole time. Everyone else? Participation trophies.")
+
+            red_count = int((final_rets <= 0).sum())
+            if red_count > total * 0.6:
+                roasts.append(f"\U0001f534 {red_count} out of {total} stocks are in the red. This isn't a portfolio, it's a crime scene.")
+            elif red_count < total * 0.3:
+                roasts.append(f"\U0001f7e2 Only {red_count} out of {total} stocks are in the red. Don't get comfortable \u2014 the market is just loading the next prank.")
+
+            return roasts
+
+        roasts = _generate_roasts(final_returns, NAME_MAP, throne, superlatives, returns, valid_tickers)
+        roast_html = ""
+        for roast in roasts:
+            roast_html += (
+                f'<div style="padding:0.55rem 0;border-bottom:1px solid rgba(18,51,36,0.08);'
+                f'font-size:0.88rem;line-height:1.55;">{roast}</div>'
+            )
+        st.markdown(
+            f'<div style="background:var(--panel-strong);border:1px solid var(--border);border-radius:20px;'
+            f'padding:1rem 1.2rem;box-shadow:var(--shadow);">'
+            f'{roast_html}'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+        # --- Weekly Report ---
+        st.markdown("#### \U0001f4e3 Weekly Report")
+        green_count_wr = int((final_returns > 0).sum())
+        red_count_wr = int((final_returns <= 0).sum())
+        avg_ret_wr = final_returns.mean()
+        trading_days_wr = len(returns) - 1 if len(returns) > 1 else 0
+        top5_wr = final_returns.head(5)
+        bot5_wr = final_returns.tail(5)
+        mvp_changes_wr = len([e for e in throne["mvp_history"] if e.get("prev_ticker")])
+        pw_wr = superlatives.get("power", {})
+
+        wr_html = (
+            '<div style="background:linear-gradient(145deg,#0d2f20 0%,#1a5c3a 40%,#0d2f20 100%);'
+            'border-radius:24px;padding:1.4rem 1.5rem;color:#f4f0e3;position:relative;overflow:hidden;">'
+            '<div style="position:absolute;top:-30px;right:-30px;width:120px;height:120px;'
+            'border-radius:50%;background:rgba(215,168,58,0.15);"></div>'
+            '<div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;'
+            'color:rgba(215,168,58,0.9);font-weight:700;">Stock Market Fantasy Draft</div>'
+            f'<div style="font-size:1.3rem;font-weight:800;margin:0.3rem 0 0.1rem;">Weekly Report</div>'
+            f'<div style="font-size:0.75rem;opacity:0.6;">'
+            f'{start_date.strftime("%b %d")} \u2013 {end_date.strftime("%b %d, %Y")} &middot; {trading_days_wr} trading days</div>'
+            '<div style="height:1px;background:rgba(255,255,255,0.15);margin:0.7rem 0;"></div>'
+            '<div style="display:flex;gap:1rem;margin-bottom:0.7rem;">'
+            f'<div style="flex:1;background:rgba(25,160,95,0.12);border-radius:12px;padding:0.6rem 0.8rem;">'
+            f'<div style="font-size:0.6rem;opacity:0.6;text-transform:uppercase;">\U0001f451 MVP</div>'
+            f'<div style="font-size:1.2rem;font-weight:800;color:#4ade80;">{html_mod.escape(best_ticker)}</div>'
+            f'<div style="font-size:0.78rem;opacity:0.8;">{html_mod.escape(NAME_MAP[best_ticker])}</div>'
+            f'<div style="font-size:0.9rem;font-weight:700;color:#4ade80;margin-top:0.2rem;">{final_returns[best_ticker]:+.2f}%</div>'
+            f'<div style="font-size:0.68rem;opacity:0.6;">{throne["mvp_streak"]}d streak</div>'
+            f'</div>'
+            f'<div style="flex:1;background:rgba(209,74,52,0.12);border-radius:12px;padding:0.6rem 0.8rem;">'
+            f'<div style="font-size:0.6rem;opacity:0.6;text-transform:uppercase;">\U0001f4a9 Benchwarmer</div>'
+            f'<div style="font-size:1.2rem;font-weight:800;color:#f87171;">{html_mod.escape(worst_ticker)}</div>'
+            f'<div style="font-size:0.78rem;opacity:0.8;">{html_mod.escape(NAME_MAP[worst_ticker])}</div>'
+            f'<div style="font-size:0.9rem;font-weight:700;color:#f87171;margin-top:0.2rem;">{final_returns[worst_ticker]:+.2f}%</div>'
+            f'<div style="font-size:0.68rem;opacity:0.6;">{throne["bench_streak"]}d streak</div>'
+            f'</div></div>'
+            '<div style="display:flex;gap:0.5rem;text-align:center;margin-bottom:0.7rem;">'
+            f'<div style="flex:1;background:rgba(255,255,255,0.06);border-radius:10px;padding:0.4rem;">'
+            f'<div style="font-size:1.1rem;font-weight:700;">{green_count_wr}</div>'
+            f'<div style="font-size:0.6rem;opacity:0.6;">\U0001f7e2 Up</div></div>'
+            f'<div style="flex:1;background:rgba(255,255,255,0.06);border-radius:10px;padding:0.4rem;">'
+            f'<div style="font-size:1.1rem;font-weight:700;">{red_count_wr}</div>'
+            f'<div style="font-size:0.6rem;opacity:0.6;">\U0001f534 Down</div></div>'
+            f'<div style="flex:1;background:rgba(255,255,255,0.06);border-radius:10px;padding:0.4rem;">'
+            f'<div style="font-size:1.1rem;font-weight:700;">{avg_ret_wr:+.1f}%</div>'
+            f'<div style="font-size:0.6rem;opacity:0.6;">Avg Return</div></div>'
+            f'<div style="flex:1;background:rgba(255,255,255,0.06);border-radius:10px;padding:0.4rem;">'
+            f'<div style="font-size:1.1rem;font-weight:700;">{mvp_changes_wr}</div>'
+            f'<div style="font-size:0.6rem;opacity:0.6;">Throne Swaps</div></div></div>'
+        )
+        wr_html += '<div style="display:flex;gap:0.8rem;">'
+        wr_html += '<div style="flex:1;"><div style="font-size:0.65rem;text-transform:uppercase;opacity:0.6;margin-bottom:0.3rem;">\U0001f3c6 Top 5</div>'
+        medals_wr = ["\U0001f947", "\U0001f948", "\U0001f949", "\U0001f4aa", "\U0001f44d"]
+        for i, (ticker, ret) in enumerate(top5_wr.items()):
+            wr_html += (
+                f'<div style="display:flex;align-items:center;gap:0.4rem;padding:0.2rem 0;'
+                f'border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.82rem;">'
+                f'<span>{medals_wr[i]}</span><b>{html_mod.escape(ticker)}</b>'
+                f'<span style="margin-left:auto;color:#4ade80;font-weight:600;">{ret:+.2f}%</span></div>'
+            )
+        wr_html += '</div>'
+        shame_wr = ["\U0001f4c9", "\U0001f921", "\U0001f5d1\ufe0f", "\U0001f6bd", "\U0001f4a9"]
+        wr_html += '<div style="flex:1;"><div style="font-size:0.65rem;text-transform:uppercase;opacity:0.6;margin-bottom:0.3rem;">\U0001f4a9 Bottom 5</div>'
+        for i, (ticker, ret) in enumerate(bot5_wr.items()):
+            wr_html += (
+                f'<div style="display:flex;align-items:center;gap:0.4rem;padding:0.2rem 0;'
+                f'border-bottom:1px solid rgba(255,255,255,0.06);font-size:0.82rem;">'
+                f'<span>{shame_wr[i]}</span><b>{html_mod.escape(ticker)}</b>'
+                f'<span style="margin-left:auto;color:#f87171;font-weight:600;">{ret:+.2f}%</span></div>'
+            )
+        wr_html += '</div></div>'
+        if pw_wr.get("climber") and pw_wr.get("faller"):
+            wr_html += (
+                '<div style="height:1px;background:rgba(255,255,255,0.1);margin:0.7rem 0;"></div>'
+                '<div style="display:flex;gap:1rem;">'
+                f'<div style="flex:1;font-size:0.82rem;">\U0001f525 <b>Hot:</b> {html_mod.escape(pw_wr["climber"])} '
+                f'<span style="color:#4ade80;">{pw_wr["climber_change"]:+.1f}%</span> in 5d</div>'
+                f'<div style="flex:1;font-size:0.82rem;">\U0001f9ca <b>Cold:</b> {html_mod.escape(pw_wr["faller"])} '
+                f'<span style="color:#f87171;">{pw_wr["faller_change"]:+.1f}%</span> in 5d</div></div>'
+            )
+        wr_html += '</div>'
+        st.markdown(wr_html, unsafe_allow_html=True)
 
         # --- System Predictions ---
         st.markdown("#### \U0001f52e Next Week's Predictions")
@@ -2526,8 +2693,6 @@ with tab_dashboard:
             .apply(leaderboard_row_style, axis=1)
         )
         st.markdown(f'<div style="overflow-x: auto;">{styled_df.to_html(escape=False)}</div>', unsafe_allow_html=True)
-
-        # (Emoji reactions removed)
 
         # --- Subscribe ---
         st.markdown("---")
