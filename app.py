@@ -487,6 +487,12 @@ div[data-testid="stPlotlyChart"] {
     border: 1px solid var(--border);
     border-radius: 18px;
 }
+/* Force all Streamlit parents of leaderboard to allow overflow */
+div:has(> .leaderboard-scroll),
+div:has(> div > .leaderboard-scroll),
+div:has(> div > div > .leaderboard-scroll) {
+    overflow: visible !important;
+}
 table.leaderboard {
     width: 100% !important;
     min-width: 1400px;
