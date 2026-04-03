@@ -2372,12 +2372,14 @@ with tab_dashboard:
         trash_talk_lines = generate_trash_talk(throne, superlatives, final_returns, NAME_MAP, ETF_MAP, returns, valid_tickers)
         achievements = compute_achievements(returns, valid_tickers, NAME_MAP, dividends, throne, final_returns, start_prices, INVESTMENT)
 
-        # --- Confetti for new MVP ---
+        # --- Confetti for new MVP (only on the day of dethroning) ---
         mvp_is_new = False
         if throne["mvp_history"] and len(throne["mvp_history"]) >= 2:
             latest = throne["mvp_history"][0]
             if latest.get("prev_ticker"):
-                mvp_is_new = True
+                dethrone_date = pd.Timestamp(latest["date"]).date()
+                today = datetime.date.today()
+                mvp_is_new = (dethrone_date == today)
         if mvp_is_new:
             confetti_colors = ["#19a05f", "#d7a83a", "#1f77b4", "#e45756", "#9467bd", "#ff7f0e"]
             confetti_html = ""
