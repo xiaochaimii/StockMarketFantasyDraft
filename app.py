@@ -3038,25 +3038,10 @@ with tab_dashboard:
             setTimeout(function() {{ btn.style.transform = ''; }}, 150);
         }}
 
-        // Auto-resize iframe to fit content
-        function resizeFrame() {{
-            var h = document.body.scrollHeight + 10;
-            // Try direct access first (works locally)
-            try {{ if (window.frameElement) window.frameElement.style.height = h + 'px'; }} catch(e) {{}}
-            // Also use postMessage for Streamlit Cloud (cross-origin)
-            window.parent.postMessage({{type: 'streamlit:setFrameHeight', height: h}}, '*');
-        }}
-        window.addEventListener('load', resizeFrame);
-        window.addEventListener('resize', resizeFrame);
-        new MutationObserver(resizeFrame).observe(document.body, {{childList:true, subtree:true}});
-        setTimeout(resizeFrame, 50);
-        setTimeout(resizeFrame, 200);
-        setTimeout(resizeFrame, 500);
         </script>
         """
 
-        roast_height = len(roasts) * 72 + 30
-        components.html(roast_component_html, height=roast_height, scrolling=True)
+        st.html(roast_component_html)
 
         # Next roast update time
         now_et = datetime.datetime.now(ZoneInfo("America/New_York"))
