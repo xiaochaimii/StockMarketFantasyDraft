@@ -3058,7 +3058,7 @@ with tab_dashboard:
             border-color: #0e5f3a; background: rgba(14,95,58,0.1);
         }}
         .roast-react-btn .rcount {{
-            font-weight: 600; color: #5d6f65; font-size: 0.68rem;
+            font-weight: 700; color: #102018; font-size: 0.75rem;
         }}
         @media (max-width: 768px) {{
             .roast-react-btn {{ padding: 0.25rem 0.55rem; font-size: 0.85rem; }}
@@ -3070,7 +3070,15 @@ with tab_dashboard:
 
         document.querySelectorAll('.roast-react-btn').forEach(function(btn) {{
             var key = btn.dataset.roast + '_' + btn.dataset.emoji;
-            if (userReacts[key]) btn.classList.add('active');
+            if (userReacts[key]) {{
+                btn.classList.add('active');
+                // Ensure count is visible if user previously reacted
+                var countEl = btn.querySelector('.rcount');
+                if (!countEl) {{
+                    var currentCount = 1;
+                    btn.innerHTML = btn.dataset.emoji + '<span class="rcount">' + currentCount + '</span>';
+                }}
+            }}
         }});
 
         function toggleReact(btn) {{
