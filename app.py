@@ -3487,7 +3487,11 @@ with tab_dashboard:
             .set_table_attributes('class="leaderboard"')
             .apply(leaderboard_row_style, axis=1)
         )
-        st.markdown(f'<div style="overflow-x: auto;">{styled_df.to_html(escape=False)}</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:calc(100vw - 2rem);border:1px solid var(--border);border-radius:18px;">'
+            f'{styled_df.to_html(escape=False)}</div>',
+            unsafe_allow_html=True,
+        )
         st.caption(
             "**Price Return (%)** is the percentage change in share price over the period, excluding dividends. "
             "**Total Return (%)** includes dividends."
