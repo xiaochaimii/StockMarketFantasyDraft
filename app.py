@@ -177,9 +177,6 @@ st.markdown("""
     --negative: #8f2d1b;
     --shadow: 0 18px 44px rgba(16, 42, 32, 0.12);
 }
-html, body, [class*="css"]  {
-    font-family: 'Space Grotesk', sans-serif !important;
-}
 /* Fix Safari mobile whitespace/overflow */
 html, body {
     overflow-x: hidden !important;
@@ -344,7 +341,7 @@ svg.main-svg {
 }
 .hero-card {
     padding: 1.4rem 1.75rem;
-    border-radius: 28px;
+    border-radius: 24px;
     margin-bottom: 0.75rem;
     position: relative;
     overflow: hidden;
@@ -428,6 +425,9 @@ svg.main-svg {
 .metric-card.bench::before {
     background: linear-gradient(180deg, #d14a34 0%, #8b1e1e 100%);
 }
+.metric-card.meh::before {
+    background: linear-gradient(180deg, #d7a83a 0%, #b8922e 100%);
+}
 .metric-label {
     color: var(--muted);
     text-transform: uppercase;
@@ -503,6 +503,10 @@ table.leaderboard tr:nth-child(even) td {
 table.leaderboard tr td:first-child {
     font-weight: 700;
     color: var(--accent);
+}
+table.leaderboard tbody tr:hover td {
+    background: rgba(14, 95, 58, 0.08);
+    transition: background 0.15s ease;
 }
 [data-testid="InputInstructions"] {
     display: none !important;
@@ -589,14 +593,6 @@ hr {
         font-size: 0.7rem !important;
         padding: 0.25rem 0.55rem !important;
     }
-    /* MVP/Benchwarmer side by side on mobile */
-    .metric-card {
-        padding: 0.55rem 0.7rem !important;
-        min-height: auto !important;
-    }
-    .metric-value {
-        font-size: 1.1rem !important;
-    }
     .hero-subtitle {
         font-size: 0.85rem;
         max-width: 100%;
@@ -608,18 +604,20 @@ hr {
     .section-heading {
         font-size: 1rem;
     }
+    /* Metric cards mobile */
     .metric-card {
-        padding: 0.75rem 0.9rem;
+        padding: 0.6rem 0.75rem !important;
+        min-height: auto !important;
         border-radius: 16px;
     }
     .metric-value {
-        font-size: 1.3rem;
+        font-size: 1.15rem !important;
     }
     .metric-label {
         font-size: 0.65rem;
     }
     .metric-detail {
-        font-size: 0.75rem;
+        font-size: 0.72rem;
     }
     table.leaderboard td, table.leaderboard th {
         padding: 8px 8px;
@@ -631,10 +629,6 @@ hr {
     }
     div[data-testid="stPlotlyChart"] {
         border-radius: 16px;
-    }
-    .hero-pill {
-        font-size: 0.72rem;
-        padding: 0.3rem 0.6rem;
     }
     /* Global mobile overflow fix */
     .block-container, .block-container > div {
@@ -1055,6 +1049,11 @@ div[data-testid="stButton"]:has(button) {
     border-radius: 16px;
     padding: 0.8rem 1rem;
     position: relative;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.pred-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(14, 95, 58, 0.12);
 }
 .pred-card .pred-icon {
     font-size: 1.5rem;
@@ -1152,6 +1151,10 @@ div[data-testid="stButton"]:has(button) {
     font-weight: 700;
     color: var(--accent);
 }
+.signal-table tbody tr:hover td {
+    background: rgba(14, 95, 58, 0.08);
+    transition: background 0.15s ease;
+}
 .news-item {
     padding: 0.5rem 0;
     border-bottom: 1px solid rgba(18,51,36,0.08);
@@ -1197,6 +1200,20 @@ div[data-testid="stButton"]:has(button) {
     z-index: 9999;
     pointer-events: none;
     animation: confetti-fall 3s ease-in-out forwards;
+}
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .trash-talk-ticker .ticker-track {
+        animation: none !important;
+    }
+    .confetti-piece {
+        animation: none !important;
+        display: none !important;
+    }
+}
+/* Consistent section spacing */
+.section-gap {
+    margin-top: 1.5rem;
 }
 
 </style>
@@ -2453,7 +2470,7 @@ with tab_dashboard:
 
         # --- Signals & News ---
         st.markdown(
-            '<div style="display:flex;align-items:center;gap:0.5rem;margin:1.2rem 0 0.5rem;">'
+            '<div style="display:flex;align-items:center;gap:0.5rem;margin:0.8rem 0 0.6rem;">'
             '<span style="font-size:1.1rem;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;'
             'color:var(--accent);">Who\'s Hot \U0001f525 Who\'s Not \U0001f4a9 Who\'s Meh \U0001f610</span></div>',
             unsafe_allow_html=True,
@@ -2541,7 +2558,6 @@ with tab_dashboard:
         )
 
         # --- Superlatives Section ---
-        st.markdown("")
         st.markdown(
             '<div style="display:flex;align-items:center;gap:0.5rem;margin:1.2rem 0 0.5rem;">'
             '<span style="font-size:1.3rem;">\U0001f3c6</span>'
@@ -2692,9 +2708,9 @@ with tab_dashboard:
 
         def _badge_cell(icon, name, holder, desc):
             return (
-                f'<td style="padding:0.7rem 1rem;vertical-align:middle;">'
-                f'<div style="display:flex;align-items:center;gap:0.7rem;">'
-                f'<span style="font-size:1.6rem;line-height:1;">{icon}</span>'
+                f'<td style="padding:0.8rem 1.1rem;vertical-align:middle;">'
+                f'<div style="display:flex;align-items:center;gap:0.8rem;">'
+                f'<span style="font-size:1.8rem;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.1));">{icon}</span>'
                 f'<div>'
                 f'<div style="font-weight:700;font-size:0.85rem;color:var(--text);">{html_mod.escape(name)}</div>'
                 f'<div style="font-size:0.78rem;color:var(--muted);">{html_mod.escape(holder)}</div>'
@@ -2864,7 +2880,6 @@ with tab_dashboard:
             st.caption("Based on 14-day RSI, 10/20-day SMA crossover, and price vs 20-day SMA. Not financial advice.")
 
         # --- System Predictions ---
-        st.markdown("")
         st.markdown(
             '<div style="display:flex;align-items:center;gap:0.5rem;margin:1.2rem 0 0.5rem;">'
             '<span style="font-size:1.3rem;">\U0001f52e</span>'
