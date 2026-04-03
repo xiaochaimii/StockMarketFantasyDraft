@@ -54,9 +54,77 @@ def fetch_all_us_stocks():
         return []
 
 
+def _us_market_holidays(year):
+    """Return a set of US stock market holiday dates for the given year."""
+    from dateutil.easter import easter
+    holidays = set()
+    # New Year's Day
+    nyd = datetime.date(year, 1, 1)
+    if nyd.weekday() == 6:  # Sunday -> observed Monday
+        holidays.add(datetime.date(year, 1, 2))
+    elif nyd.weekday() == 5:  # Saturday -> not observed (prior Friday is prev year)
+        pass
+    else:
+        holidays.add(nyd)
+    # MLK Day: 3rd Monday of January
+    holidays.add(_nth_weekday(year, 1, 0, 3))
+    # Presidents' Day: 3rd Monday of February
+    holidays.add(_nth_weekday(year, 2, 0, 3))
+    # Good Friday
+    holidays.add(easter(year) - datetime.timedelta(days=2))
+    # Memorial Day: last Monday of May
+    holidays.add(_last_weekday(year, 5, 0))
+    # Juneteenth
+    jt = datetime.date(year, 6, 19)
+    if jt.weekday() == 6:
+        holidays.add(datetime.date(year, 6, 20))
+    elif jt.weekday() == 5:
+        holidays.add(datetime.date(year, 6, 18))
+    else:
+        holidays.add(jt)
+    # Independence Day
+    jul4 = datetime.date(year, 7, 4)
+    if jul4.weekday() == 6:
+        holidays.add(datetime.date(year, 7, 5))
+    elif jul4.weekday() == 5:
+        holidays.add(datetime.date(year, 7, 3))
+    else:
+        holidays.add(jul4)
+    # Labor Day: 1st Monday of September
+    holidays.add(_nth_weekday(year, 9, 0, 1))
+    # Thanksgiving: 4th Thursday of November
+    holidays.add(_nth_weekday(year, 11, 3, 4))
+    # Christmas
+    xmas = datetime.date(year, 12, 25)
+    if xmas.weekday() == 6:
+        holidays.add(datetime.date(year, 12, 26))
+    elif xmas.weekday() == 5:
+        holidays.add(datetime.date(year, 12, 24))
+    else:
+        holidays.add(xmas)
+    return holidays
+
+
+def _nth_weekday(year, month, weekday, n):
+    """Return the nth occurrence of weekday (0=Mon) in the given month."""
+    first = datetime.date(year, month, 1)
+    diff = (weekday - first.weekday()) % 7
+    return first + datetime.timedelta(days=diff + 7 * (n - 1))
+
+
+def _last_weekday(year, month, weekday):
+    """Return the last occurrence of weekday (0=Mon) in the given month."""
+    import calendar
+    last_day = datetime.date(year, month, calendar.monthrange(year, month)[1])
+    diff = (last_day.weekday() - weekday) % 7
+    return last_day - datetime.timedelta(days=diff)
+
+
 def is_market_open():
     now_et = datetime.datetime.now(ZoneInfo("America/New_York"))
     if now_et.weekday() >= 5:
+        return False
+    if now_et.date() in _us_market_holidays(now_et.year):
         return False
     market_open = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
     market_close = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
