@@ -2374,6 +2374,13 @@ with tab_dashboard:
         top10_tickers = final_returns.head(10).index.tolist()
         bottom10_tickers = final_returns.tail(10).index.tolist()
 
+        # Compute rank changes vs yesterday for arrows
+        if len(returns) >= 2:
+            prev_returns = returns[valid_tickers].iloc[-2].sort_values(ascending=False)
+            prev_ranks = {ticker: rank for rank, ticker in enumerate(prev_returns.index, start=1)}
+        else:
+            prev_ranks = {}
+
         # --- ETF Winner ---
         ETF_EMOJI = {"UNCL": "👨‍🦳", "ANTY": "👩🏻", "KIDZ": "👶🏻"}
         etf_sums = {}
@@ -2861,9 +2868,18 @@ with tab_dashboard:
                     eps_actual_html = '<span style="color:var(--muted);">—</span>'
                 earn_date_html = earn_date if earn_date else '<span style="color:var(--muted);">—</span>'
 
+                prev_rank = prev_ranks.get(ticker, rank)
+                rank_diff = prev_rank - rank
+                if rank_diff > 0:
+                    sig_arrow = '<span style="color:#19a05f;font-size:12px;">▲</span>'
+                elif rank_diff < 0:
+                    sig_arrow = '<span style="color:#d14a34;font-size:12px;">▼</span>'
+                else:
+                    sig_arrow = '<span style="color:#102018;font-size:12px;display:inline-block;transform:rotate(90deg);">▲</span>'
+
                 sig_html += (
                     f'<tr>'
-                    f'<td style="font-weight:700;color:var(--accent);">{rank}</td>'
+                    f'<td style="font-weight:700;color:var(--accent);"><span style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">{sig_arrow} {rank}</span></td>'
                     f'<td><b>{html_mod.escape(ticker)}</b> <span style="color:var(--muted);font-size:0.72rem;">{html_mod.escape(NAME_MAP.get(ticker, ""))}</span></td>'
                     f'<td style="color:{ret_color};font-weight:600;">{ret_val:+.2f}%</td>'
                     f'<td>{rsi_html}</td>'
@@ -3315,13 +3331,6 @@ with tab_dashboard:
 
         start_date_label = returns.index[0].strftime("%m/%d/%Y")
         end_date_label = returns.index[-1].strftime("%m/%d/%Y")
-
-        # Compute rank changes vs yesterday's standing
-        if len(returns) >= 2:
-            prev_returns = returns[valid_tickers].iloc[-2].sort_values(ascending=False)
-            prev_ranks = {ticker: rank for rank, ticker in enumerate(prev_returns.index, start=1)}
-        else:
-            prev_ranks = {}
 
         rows = []
         for rank, (ticker, ret) in enumerate(final_returns.items(), start=1):
