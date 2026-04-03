@@ -3134,11 +3134,20 @@ with tab_dashboard:
             btn.style.transform = 'scale(1.25)';
             setTimeout(function() {{ btn.style.transform = ''; }}, 150);
         }}
+
+        // Auto-resize iframe to fit content
+        function resizeFrame() {{
+            var h = document.body.scrollHeight;
+            window.frameElement.style.height = h + 'px';
+        }}
+        window.addEventListener('load', resizeFrame);
+        window.addEventListener('resize', resizeFrame);
+        setTimeout(resizeFrame, 100);
         </script>
         """
 
-        roast_height = len(roasts) * 75 + 40
-        components.html(roast_component_html, height=roast_height, scrolling=False)
+        roast_height = len(roasts) * 120 + 40
+        components.html(roast_component_html, height=roast_height, scrolling=True)
 
         # Next roast update time
         now_et = datetime.datetime.now(ZoneInfo("America/New_York"))
