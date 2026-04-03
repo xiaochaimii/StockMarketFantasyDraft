@@ -195,6 +195,32 @@ table td, table th, code, .mono { font-family: 'IBM Plex Mono', monospace !impor
 }
 [data-testid="stHeader"] {
     background: transparent;
+    z-index: 999 !important;
+    position: relative !important;
+}
+/* Force the main menu popover above all content with solid background */
+div[data-testid="stMainMenuPopover"] {
+    z-index: 99999 !important;
+    background: #ffffff !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+}
+div[data-testid="stMainMenuPopover"] ul {
+    background: #ffffff !important;
+}
+div[data-testid="stMainMenuPopover"] li {
+    color: #102018 !important;
+    background: #ffffff !important;
+}
+div[data-testid="stMainMenuPopover"] li:hover {
+    background: #f0f0f0 !important;
+}
+/* Prevent plotly charts from creating competing stacking contexts */
+#js-plotly-tester {
+    z-index: auto !important;
+}
+svg.main-svg {
+    z-index: auto !important;
 }
 .block-container {
     padding-top: 2.5rem;
@@ -622,7 +648,8 @@ st.markdown("""
     border-radius: 16px;
     padding: 0.6rem 0;
     margin-bottom: 0.75rem;
-    overflow: hidden;
+    overflow: clip;
+    overflow-clip-margin: content-box;
 }
 @keyframes ticker-scroll {
     0% { transform: translateX(0); }
