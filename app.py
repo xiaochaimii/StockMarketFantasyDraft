@@ -2396,39 +2396,69 @@ with tab_dashboard:
         throne = compute_throne_history(returns, valid_tickers, NAME_MAP)
         superlatives = compute_superlatives(returns, valid_tickers, NAME_MAP, ETF_MAP, throne)
 
-        # --- Live status indicator ---
+        # --- Live status indicator with countdown ---
         now_et = datetime.datetime.now(ZoneInfo("America/New_York"))
         live_timestamp = now_et.strftime("%I:%M:%S %p ET")
         if is_market_open():
+            # Countdown to market close (4:00 PM ET)
+            market_close_et = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
+            secs_to_close = max(0, int((market_close_et - now_et).total_seconds()))
             countdown_iframe = (
                 '<iframe srcdoc="'
                 '<body style=&quot;margin:0;padding:0;overflow:hidden;background:transparent;&quot;>'
                 '<span id=&quot;c&quot; style=&quot;font-family:Space Grotesk,-apple-system,BlinkMacSystemFont,sans-serif;'
-                'font-size:14px;color:#aaa;&quot;>(refreshes in 60m 00s)</span>'
-                '<script>var e=document.getElementById(&quot;c&quot;),s=3600;'
-                'setInterval(function(){s--;if(s&lt;=0){e.textContent=&quot;(refreshing…)&quot;;}else{'
-                'var m=Math.floor(s/60),sec=s%60;e.textContent=&quot;(refreshes in &quot;+m+&quot;m &quot;+(sec&lt;10?&quot;0&quot;:&quot;&quot;)+sec+&quot;s)&quot;;}},1000);'
+                f'font-size:14px;color:#aaa;&quot;></span>'
+                f'<script>var e=document.getElementById(&quot;c&quot;),s={secs_to_close};'
+                'setInterval(function(){s--;if(s&lt;=0){e.textContent=&quot;Market closed&quot;;}else{'
+                'var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;'
+                'e.textContent=&quot;closes in &quot;+h+&quot;h &quot;+(m&lt;10?&quot;0&quot;:&quot;&quot;)+m+&quot;m &quot;+(sec&lt;10?&quot;0&quot;:&quot;&quot;)+sec+&quot;s&quot;;}},1000);'
                 '</script></body>'
-                '" style="border:none;width:175px;height:18px;vertical-align:text-bottom;display:inline-block;'
+                '" style="border:none;width:200px;height:18px;vertical-align:text-bottom;display:inline-block;'
                 'overflow:hidden;background:transparent;" scrolling="no"></iframe>'
             )
             st.markdown(
-                f'<div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.3rem;">'
+                f'<div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0;">'
                 f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#19a05f;'
                 f'box-shadow:0 0 6px #19a05f;"></span>'
                 f'<span style="font-size:14px;color:#888;line-height:18px;">'
                 f'<strong style="color:#19a05f;">LIVE</strong> &middot; {live_timestamp}'
-                f' {countdown_iframe}'
+                f' &middot; {countdown_iframe}'
                 f'</span></div>',
                 unsafe_allow_html=True,
             )
         else:
+            # Countdown to next market open (9:30 AM ET next trading day)
+            next_open = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
+            if now_et >= next_open:
+                next_open += datetime.timedelta(days=1)
+            while next_open.weekday() >= 5 or next_open.date() in _us_market_holidays(next_open.year):
+                next_open += datetime.timedelta(days=1)
+            secs_to_open = max(0, int((next_open - now_et).total_seconds()))
+            next_open_label = next_open.strftime("%a %b %d, %I:%M %p ET")
+            countdown_iframe = (
+                '<iframe srcdoc="'
+                '<body style=&quot;margin:0;padding:0;overflow:hidden;background:transparent;&quot;>'
+                '<span id=&quot;c&quot; style=&quot;font-family:Space Grotesk,-apple-system,BlinkMacSystemFont,sans-serif;'
+                f'font-size:13px;color:#5d6f65;&quot;></span>'
+                f'<script>var e=document.getElementById(&quot;c&quot;),s={secs_to_open};'
+                'function u(){if(s&lt;=0){e.textContent=&quot;Market opening...&quot;;return;}'
+                'var d=Math.floor(s/86400),h=Math.floor((s%86400)/3600),m=Math.floor((s%3600)/60),sec=s%60;'
+                'var t=&quot;&quot;;if(d&gt;0)t+=d+&quot;d &quot;;t+=h+&quot;h &quot;+(m&lt;10?&quot;0&quot;:&quot;&quot;)+m+&quot;m &quot;+(sec&lt;10?&quot;0&quot;:&quot;&quot;)+sec+&quot;s&quot;;'
+                'e.textContent=t;s--;}'
+                'u();setInterval(u,1000);'
+                '</script></body>'
+                '" style="border:none;width:180px;height:18px;vertical-align:text-bottom;display:inline-block;'
+                'overflow:hidden;background:transparent;" scrolling="no"></iframe>'
+            )
             st.markdown(
-                f'<div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.3rem;">'
+                f'<div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0;">'
                 f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--muted);"></span>'
                 f'<span style="font-size:0.78rem;color:var(--muted);">'
                 f'Market <strong>CLOSED</strong> &middot; {live_timestamp}'
-                f'</span></div>',
+                f'</span></div>'
+                f'<div style="font-size:0.75rem;color:var(--muted);margin:0.15rem 0 0.5rem 0;">'
+                f'\U0001f514 Opens {next_open_label} &middot; {countdown_iframe}'
+                f'</div>',
                 unsafe_allow_html=True,
             )
         # --- Generate Trash Talk & Achievements ---
@@ -2817,81 +2847,8 @@ with tab_dashboard:
             unsafe_allow_html=True,
         )
 
-        # --- Signal Table ---
-        st.markdown('<div style="margin-top:1rem;"></div>', unsafe_allow_html=True)
-        if stock_signals:
-            ranked_signals = [(ticker, stock_signals[ticker]) for ticker in final_returns.index if ticker in stock_signals]
-            earnings_data = fetch_earnings(tuple(valid_tickers))
-
-            sig_html = '<table class="signal-table">'
-            sig_html += '<tr><th>Rank</th><th>Stock</th><th>Total Return</th><th>RSI</th><th>SMA Cross</th><th>vs 20d SMA</th><th>Signal</th><th>Next Earnings</th><th>Est. EPS</th><th>Last EPS</th></tr>'
-            for rank, (ticker, sig) in enumerate(ranked_signals, start=1):
-                ret_val = final_returns[ticker] if ticker in final_returns.index else 0
-                ret_color = "#19a05f" if ret_val >= 0 else "#d14a34"
-
-                rsi_val = sig["rsi"]
-                if rsi_val is not None:
-                    if rsi_val < 30:
-                        rsi_color = "#19a05f"
-                    elif rsi_val > 70:
-                        rsi_color = "#d14a34"
-                    else:
-                        rsi_color = "#d7a83a"
-                    rsi_html = (
-                        f'<div class="rsi-bar"><div class="rsi-bar-fill" style="width:{rsi_val}%;background:{rsi_color};"></div></div>'
-                        f' <span style="font-size:0.75rem;">{rsi_val}</span>'
-                    )
-                else:
-                    rsi_html = '<span style="color:var(--muted);font-size:0.75rem;">N/A</span>'
-
-                if sig["sma_cross"] is not None:
-                    sma_html = '<span style="color:#19a05f;">\u2713 Bullish</span>' if sig["sma_cross"] else '<span style="color:#d14a34;">\u2717 Bearish</span>'
-                else:
-                    sma_html = '<span style="color:var(--muted);">N/A</span>'
-
-                if sig["price_vs_sma"] is not None:
-                    pv_html = '<span style="color:#19a05f;">Above</span>' if sig["price_vs_sma"] else '<span style="color:#d14a34;">Below</span>'
-                else:
-                    pv_html = '<span style="color:var(--muted);">N/A</span>'
-
-                sig_class = f'signal-{sig["signal"].lower()}'
-                earn = earnings_data.get(ticker, {})
-                earn_date = earn.get("next_date", "")
-                eps_est = earn.get("eps_est")
-                eps_actual = earn.get("eps_actual")
-                eps_est_html = f'${eps_est:.2f}' if eps_est is not None else '<span style="color:var(--muted);">—</span>'
-                if eps_actual is not None:
-                    eps_actual_html = f'${eps_actual:.2f}'
-                else:
-                    eps_actual_html = '<span style="color:var(--muted);">—</span>'
-                earn_date_html = earn_date if earn_date else '<span style="color:var(--muted);">—</span>'
-
-                prev_rank = prev_ranks.get(ticker, rank)
-                rank_diff = prev_rank - rank
-                if rank_diff > 0:
-                    sig_arrow = '<span style="color:#19a05f;font-size:12px;">▲</span>'
-                elif rank_diff < 0:
-                    sig_arrow = '<span style="color:#d14a34;font-size:12px;">▼</span>'
-                else:
-                    sig_arrow = '<span style="color:#102018;font-size:12px;display:inline-block;transform:rotate(90deg);">▲</span>'
-
-                sig_html += (
-                    f'<tr>'
-                    f'<td style="font-weight:700;color:var(--accent);"><span style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">{sig_arrow} {rank}</span></td>'
-                    f'<td><b>{html_mod.escape(ticker)}</b> <span style="color:var(--muted);font-size:0.72rem;">{html_mod.escape(NAME_MAP.get(ticker, ""))}</span></td>'
-                    f'<td style="color:{ret_color};font-weight:600;">{ret_val:+.2f}%</td>'
-                    f'<td>{rsi_html}</td>'
-                    f'<td style="font-size:0.78rem;">{sma_html}</td>'
-                    f'<td style="font-size:0.78rem;">{pv_html}</td>'
-                    f'<td><span class="signal-badge {sig_class}">{sig["signal"]}</span></td>'
-                    f'<td style="font-size:0.78rem;">{earn_date_html}</td>'
-                    f'<td style="font-size:0.78rem;">{eps_est_html}</td>'
-                    f'<td style="font-size:0.78rem;">{eps_actual_html}</td>'
-                    f'</tr>'
-                )
-            sig_html += '</table>'
-            st.markdown(f'<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">{sig_html}</div>', unsafe_allow_html=True)
-            st.caption("Based on 14-day RSI, 10/20-day SMA crossover, and price vs 20-day SMA. Not financial advice.")
+        # Store signals and earnings for the combined leaderboard
+        earnings_data = fetch_earnings(tuple(valid_tickers)) if stock_signals else {}
 
         # --- Shots Fired ---
         st.markdown(
@@ -3389,60 +3346,114 @@ with tab_dashboard:
         )
 
         # --- Leaderboard ---
-        st.markdown("""
-        <section class="section-card">
-          <div class="section-heading">Leaderboard</div>
-          <p class="section-copy"><strong>Price Return (%)</strong> is the percentage change in share price over the period, excluding dividends.</p>
-          <p class="section-copy"><strong>Total Return (%)</strong> is the percentage return including both share price change and dividend payouts.</p>
-        </section>
-        """, unsafe_allow_html=True)
+        st.markdown(
+            '<div style="display:flex;align-items:center;gap:0.5rem;margin:1.2rem 0 0.5rem;">'
+            '<span style="font-size:1.3rem;">\U0001f3c6</span>'
+            '<span style="font-size:1.1rem;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;'
+            'color:var(--accent);">Leaderboard</span></div>',
+            unsafe_allow_html=True,
+        )
 
         start_date_label = returns.index[0].strftime("%m/%d/%Y")
         end_date_label = returns.index[-1].strftime("%m/%d/%Y")
 
         rows = []
         for rank, (ticker, ret) in enumerate(final_returns.items(), start=1):
-            # Shares bought with investment
             share_price = start_prices[ticker]
             shares = INVESTMENT / share_price
-            # Dividend income for those shares
             div_per_share = dividends.get(ticker, 0.0)
             div_income = shares * div_per_share
-            # Market value = shares × current price
             market_value = shares * end_prices[ticker]
-            # Final value = market value + dividends
             final_value = market_value + div_income
             total_return = (final_value / INVESTMENT - 1) * 100
             profit = final_value - INVESTMENT
             total_players = len(final_returns)
             if rank == 1:
-                display_ticker = f"👑 {ticker}"
+                display_ticker = f"\U0001f451 {ticker}"
             elif rank == total_players:
-                display_ticker = f"💩 {ticker}"
+                display_ticker = f"\U0001f4a9 {ticker}"
             else:
                 display_ticker = ticker
             prev_rank = prev_ranks.get(ticker, rank)
-            rank_diff = prev_rank - rank  # positive = moved up, negative = moved down
+            rank_diff = prev_rank - rank
             if rank_diff > 0:
-                arrow = '<span style="color:#19a05f;font-size:12px;">▲</span>'
+                arrow = '<span style="color:#19a05f;font-size:12px;">\u25b2</span>'
             elif rank_diff < 0:
-                arrow = '<span style="color:#d14a34;font-size:12px;">▼</span>'
+                arrow = '<span style="color:#d14a34;font-size:12px;">\u25bc</span>'
             else:
-                arrow = '<span style="color:#102018;font-size:12px;display:inline-block;transform:rotate(90deg);">▲</span>'
+                arrow = '<span style="color:#102018;font-size:12px;display:inline-block;transform:rotate(90deg);">\u25b2</span>'
+
+            # Signal columns
+            sig = stock_signals.get(ticker, {}) if stock_signals else {}
+            rsi_val = sig.get("rsi")
+            if rsi_val is not None:
+                if rsi_val < 30:
+                    rsi_color = "#19a05f"
+                elif rsi_val > 70:
+                    rsi_color = "#d14a34"
+                else:
+                    rsi_color = "#d7a83a"
+                rsi_cell = (
+                    f'<div class="rsi-bar"><div class="rsi-bar-fill" style="width:{rsi_val}%;background:{rsi_color};"></div></div>'
+                    f' <span style="font-size:0.75rem;">{rsi_val}</span>'
+                )
+            else:
+                rsi_cell = '<span style="color:var(--muted);">\u2014</span>'
+
+            sma_cross = sig.get("sma_cross")
+            if sma_cross is not None:
+                sma_cell = '<span style="color:#19a05f;">\u2713 Bullish</span>' if sma_cross else '<span style="color:#d14a34;">\u2717 Bearish</span>'
+            else:
+                sma_cell = '<span style="color:var(--muted);">\u2014</span>'
+
+            signal_val = sig.get("signal", "")
+            if signal_val:
+                sig_class = f'signal-{signal_val.lower()}'
+                signal_cell = f'<span class="signal-badge {sig_class}">{signal_val}</span>'
+            else:
+                signal_cell = '<span style="color:var(--muted);">\u2014</span>'
+
+            earn = earnings_data.get(ticker, {})
+            earn_date = earn.get("next_date", "")
+            eps_est = earn.get("eps_est")
+            eps_actual = earn.get("eps_actual")
+            earn_cell = earn_date if earn_date else '<span style="color:var(--muted);">\u2014</span>'
+            eps_est_cell = f'${eps_est:.2f}' if eps_est is not None else '<span style="color:var(--muted);">\u2014</span>'
+            eps_actual_cell = f'${eps_actual:.2f}' if eps_actual is not None else '<span style="color:var(--muted);">\u2014</span>'
+
+            stock_cell = f'<b>{html_mod.escape(display_ticker)}</b> <span style="color:var(--muted);font-size:0.78rem;">{html_mod.escape(NAME_MAP[ticker])}</span>'
+            price_ret_html = format_signed_percent(ret)
+            price_ret_html = price_ret_html.replace('<span', '<span style="font-weight:700;"', 1) if '<span' in price_ret_html else f'<b>{price_ret_html}</b>'
+            total_ret_html = format_signed_percent(total_return)
+            total_ret_html = total_ret_html.replace('<span', '<span style="font-weight:700;"', 1) if '<span' in total_ret_html else f'<b>{total_ret_html}</b>'
+
+            # vs 20d SMA
+            pv_sma = sig.get("price_vs_sma")
+            if pv_sma is not None:
+                pv_sma_cell = '<span style="color:#19a05f;">Above</span>' if pv_sma else '<span style="color:#d14a34;">Below</span>'
+            else:
+                pv_sma_cell = '<span style="color:var(--muted);">\u2014</span>'
+
             rows.append({
                 "Rank": f'<span style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap;">{arrow} {rank}</span>',
                 "ETF": ETF_MAP.get(ticker, ""),
-                "Stock": NAME_MAP[ticker],
-                "Ticker": display_ticker,
-                f"Start Price ({start_date_label})": f"${share_price:.2f}",
-                f"End Price ({end_date_label})": f"${end_prices[ticker]:.2f}",
+                "Stock": stock_cell,
+                "Total Return (%)": total_ret_html,
+                "Price Return (%)": price_ret_html,
+                "RSI": rsi_cell,
+                "SMA Cross": sma_cell,
+                "vs 20d SMA": pv_sma_cell,
+                "Signal": signal_cell,
+                f"Start ({start_date_label})": f"${share_price:.2f}",
+                f"End ({end_date_label})": f"${end_prices[ticker]:.2f}",
                 "Stake": f"${INVESTMENT:.2f}",
-                f"Units ({start_date_label})": f"{shares:.4f}",
+                "Units": f"{shares:.4f}",
                 "Profit/(Loss)": format_signed_currency(profit),
-                "Market Value": format_signed_currency(market_value),
+                "Mkt Value": format_signed_currency(market_value),
                 "Dividends": format_signed_currency(div_income),
-                "Price Return (%)": format_signed_percent(ret),
-                "Total Return (%)": format_signed_percent(total_return),
+                "Next Earnings": earn_cell,
+                "Est. EPS": eps_est_cell,
+                "Last EPS": eps_actual_cell,
             })
 
         df = pd.DataFrame(rows)
@@ -3478,6 +3489,10 @@ with tab_dashboard:
             .apply(leaderboard_row_style, axis=1)
         )
         st.markdown(f'<div style="overflow-x: auto;">{styled_df.to_html(escape=False)}</div>', unsafe_allow_html=True)
+        st.caption(
+            "**Price Return (%)** is the percentage change in share price over the period, excluding dividends. "
+            "**Total Return (%)** includes dividends."
+        )
 
         # --- Subscribe ---
         st.markdown("---")
