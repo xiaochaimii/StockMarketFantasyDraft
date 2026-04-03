@@ -1649,10 +1649,12 @@ GENERIC_TRIVIA = [
 
 
 def get_daily_trivia(ticker):
-    """Get a deterministic-but-daily-rotating trivia for a ticker."""
+    """Get a deterministic-but-daily-rotating trivia for a ticker. Returns None if no specific trivia."""
+    facts = STOCK_TRIVIA.get(ticker)
+    if not facts:
+        return None
     today_str = datetime.date.today().isoformat()
     seed = hashlib.md5(f"{ticker}{today_str}".encode()).hexdigest()
-    facts = STOCK_TRIVIA.get(ticker, GENERIC_TRIVIA)
     idx = int(seed, 16) % len(facts)
     return facts[idx]
 
@@ -1945,16 +1947,24 @@ with tab_dashboard:
                 unsafe_allow_html=True,
             )
 
-        # --- Daily Trivia ---
-        trivia_ticker = best_ticker
-        trivia_fact = get_daily_trivia(trivia_ticker)
-        st.markdown(
-            f'<div class="trivia-card">'
-            f'<div class="trivia-label">\U0001f4a1 Did You Know? \u2014 {html_mod.escape(trivia_ticker)}</div>'
-            f'<div class="trivia-text">{html_mod.escape(trivia_fact)}</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
+        # --- Daily Trivia (only if we have a specific fact) ---
+        trivia_fact = None
+        trivia_ticker = None
+        # Try MVP first, then benchwarmer, then any stock with trivia
+        for candidate in [best_ticker, worst_ticker] + list(final_returns.index):
+            fact = get_daily_trivia(candidate)
+            if fact:
+                trivia_ticker = candidate
+                trivia_fact = fact
+                break
+        if trivia_fact:
+            st.markdown(
+                f'<div class="trivia-card">'
+                f'<div class="trivia-label">\U0001f4a1 Did You Know? \u2014 {html_mod.escape(trivia_ticker)}</div>'
+                f'<div class="trivia-text">{html_mod.escape(trivia_fact)}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
 
         metric_cols = st.columns(4)
         metric_cols[0].markdown(
@@ -2127,9 +2137,20 @@ with tab_dashboard:
         # Multi-Award bar: find stocks that appear in multiple badges
         ticker_badges = {}
         for icon, name, holder, desc in badges_data:
-            # Extract ticker from holder string (first word before space or parenthesis)
-            t = holder.split(" (")[0].split(" ")[0].split(" vs ")[0] if holder else ""
-            if t and t not in ("Most", "Biggest", "Took", "Bottom", "Top", "Closest", "Went", "Best", "Longest"):
+            # Extract tickers from holder string
+            tickers_in_badge = []
+            base = holder.split(" (")[0] if holder else ""
+            if " vs " in base:
+                # Rivalry-style: "ARM vs SNDK"
+                for part in base.split(" vs "):
+                    part = part.strip()
+                    if part and part not in ("Most", "Biggest", "Took", "Bottom", "Top", "Closest", "Went", "Best", "Longest"):
+                        tickers_in_badge.append(part)
+            else:
+                t = base.split(" ")[0] if base else ""
+                if t and t not in ("Most", "Biggest", "Took", "Bottom", "Top", "Closest", "Went", "Best", "Longest"):
+                    tickers_in_badge.append(t)
+            for t in tickers_in_badge:
                 ticker_badges.setdefault(t, []).append((icon, name))
         multi_badge_tickers = {t: badges for t, badges in ticker_badges.items() if len(badges) > 1}
 
@@ -2508,45 +2529,34 @@ with tab_dashboard:
 
         # --- Emoji Reactions ---
         st.markdown("#### \U0001f60e React to Stocks")
-        st.caption("Drop an emoji on your favorite (or least favorite) stocks")
         reactions_data = load_reactions()
 
         sorted_tickers_for_reactions = final_returns.index.tolist()
-        # Show top 5 and bottom 5 for reactions
         reaction_tickers = sorted_tickers_for_reactions[:5] + sorted_tickers_for_reactions[-5:]
 
-        # Render compact reaction cards in a 5-column grid
-        for row_start in range(0, len(reaction_tickers), 5):
-            row_tickers = reaction_tickers[row_start:row_start + 5]
-            cols = st.columns(len(row_tickers))
-            for col_idx, ticker in enumerate(row_tickers):
-                with cols[col_idx]:
-                    ticker_reactions = reactions_data.get(ticker, {})
-                    ret_val = final_returns[ticker]
-                    ret_class = "positive" if ret_val >= 0 else "negative"
-                    emoji_counts = " &nbsp; ".join(
-                        f'{emoji}<span class="count">{ticker_reactions.get(emoji, 0)}</span>'
-                        for emoji in REACTION_EMOJIS
-                    )
-                    st.markdown(
-                        f'<div style="background:rgba(255,255,255,0.8);border:1px solid var(--border);'
-                        f'border-radius:12px;padding:0.5rem 0.6rem;text-align:center;min-height:80px;">'
-                        f'<div style="font-weight:700;font-size:0.9rem;">{html_mod.escape(ticker)}</div>'
-                        f'<div class="{ret_class}" style="font-size:0.78rem;">{ret_val:+.2f}%</div>'
-                        f'<div class="reaction-bar" style="margin-top:0.3rem;justify-content:center;">{emoji_counts}</div>'
-                        f'</div>',
-                        unsafe_allow_html=True,
-                    )
-                    # Tiny buttons row
-                    mini_cols = st.columns(len(REACTION_EMOJIS))
-                    for e_idx, emoji in enumerate(REACTION_EMOJIS):
-                        with mini_cols[e_idx]:
-                            if st.button(emoji, key=f"react_{ticker}_{emoji}"):
-                                if ticker not in reactions_data:
-                                    reactions_data[ticker] = {}
-                                reactions_data[ticker][emoji] = reactions_data[ticker].get(emoji, 0) + 1
-                                save_reactions(reactions_data)
-                                st.rerun()
+        # Single compact table with one row per stock, emoji buttons inline
+        for ticker in reaction_tickers:
+            ticker_reactions = reactions_data.get(ticker, {})
+            ret_val = final_returns[ticker]
+            ret_class = "positive" if ret_val >= 0 else "negative"
+
+            cols = st.columns([2, 1, 1, 1, 1])
+            cols[0].markdown(
+                f'<div style="padding:0.2rem 0;">'
+                f'<b>{html_mod.escape(ticker)}</b> '
+                f'<span class="{ret_class}" style="font-size:0.82rem;">{ret_val:+.2f}%</span>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+            for e_idx, emoji in enumerate(REACTION_EMOJIS):
+                count = ticker_reactions.get(emoji, 0)
+                label = f"{emoji} {count}" if count > 0 else emoji
+                if cols[e_idx + 1].button(label, key=f"react_{ticker}_{emoji}", use_container_width=True):
+                    if ticker not in reactions_data:
+                        reactions_data[ticker] = {}
+                    reactions_data[ticker][emoji] = count + 1
+                    save_reactions(reactions_data)
+                    st.rerun()
 
         # --- Subscribe ---
         st.markdown("---")
