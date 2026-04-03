@@ -464,24 +464,21 @@ hr {
         padding-bottom: 1.5rem;
     }
     .hero-card {
-        padding: 1rem 1rem;
-        border-radius: 18px;
+        padding: 1.2rem 1.2rem !important;
+        border-radius: 20px;
+        margin-bottom: 0.6rem !important;
     }
     .hero-title {
-        font-size: 1.2rem !important;
-        margin: 0.2rem 0 0.3rem !important;
-    }
-    .hero-card {
-        padding: 0.7rem 0.9rem !important;
-        margin-bottom: 0.4rem !important;
+        font-size: 1.45rem !important;
+        margin: 0.3rem 0 0.5rem !important;
     }
     .hero-meta {
-        gap: 0.3rem !important;
-        margin-top: 0.3rem !important;
+        gap: 0.4rem !important;
+        margin-top: 0.4rem !important;
     }
     .hero-pill {
-        font-size: 0.65rem !important;
-        padding: 0.2rem 0.5rem !important;
+        font-size: 0.7rem !important;
+        padding: 0.25rem 0.55rem !important;
     }
     /* MVP/Benchwarmer side by side on mobile */
     .metric-card {
