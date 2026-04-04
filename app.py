@@ -4090,10 +4090,11 @@ with tab_feud:
     }
 
     function renderMvpDD(q) {
-      q = q.toLowerCase();
-      var f = stocks.filter(function(s) {
-        return s.ticker.toLowerCase().includes(q) || s.name.toLowerCase().includes(q);
-      }).slice(0, 8);
+      q = q.toLowerCase().trim();
+      var f = q ? stocks.filter(function(s) {
+        return s.ticker.toLowerCase().startsWith(q) || s.name.toLowerCase().startsWith(q);
+      }) : stocks;
+      f = f.slice(0, 8);
       if (!f.length) {
         mvpDropdown.innerHTML = '<div style="padding:0.5rem 0.9rem;color:#5d6f65;font-size:0.85rem;">No matches</div>';
       } else {
