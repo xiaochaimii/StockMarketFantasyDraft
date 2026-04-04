@@ -3533,7 +3533,7 @@ with tab_dashboard:
             'table.leaderboard td, table.leaderboard th { padding:10px 8px; text-align:left; border-bottom:1px solid rgba(18,51,36,0.06); border-right:1px solid rgba(18,51,36,0.04); white-space:nowrap; font-family:"Space Grotesk",sans-serif; font-size:0.82rem; }'
             'table.leaderboard th.blank, table.leaderboard td.blank { display:none; padding:0; height:0; border:none; }'
             'table.leaderboard thead tr:has(th.blank) { display:none; }'
-            'table.leaderboard th { white-space:normal; background:linear-gradient(90deg,#0d2f20,#13492f); color:#f4f0e3; text-transform:uppercase; letter-spacing:0.06em; font-family:"Space Grotesk",sans-serif; font-size:0.72rem; font-weight:700; min-width:60px; line-height:1.3; padding:10px 8px; position:sticky; top:0; z-index:1; }'
+            'table.leaderboard th { white-space:normal; background:linear-gradient(90deg,#0d2f20,#13492f); color:#f4f0e3; text-transform:uppercase; letter-spacing:0.06em; font-family:"Space Grotesk",sans-serif; font-size:0.72rem; font-weight:700; min-width:45px; max-width:100px; line-height:1.3; padding:10px 8px; position:sticky; top:0; z-index:1; }'
             'table.leaderboard tr:nth-child(even) td { background:rgba(16,95,58,0.04); }'
             'table.leaderboard tbody tr:hover td { background:rgba(14,95,58,0.08); }'
             '.signal-badge { display:inline-block; padding:0.1rem 0.5rem; border-radius:999px; font-size:0.68rem; font-weight:700; letter-spacing:0.03em; }'
@@ -3594,8 +3594,12 @@ with tab_dashboard:
                     worst_ret = sector_rets[worst_t]
                     best_color = "#19a05f" if best_ret >= 0 else "#d14a34"
                     worst_color = "#19a05f" if worst_ret >= 0 else "#d14a34"
-                    best_html = f'<b>{html_mod.escape(best_t)}</b> <span style="color:{best_color};font-weight:700;">{best_ret:+.2f}%</span>'
-                    worst_html = f'<b>{html_mod.escape(worst_t)}</b> <span style="color:{worst_color};font-weight:700;">{worst_ret:+.2f}%</span>'
+                    best_etf = ETF_MAP.get(best_t, "")
+                    worst_etf = ETF_MAP.get(worst_t, "")
+                    best_etf_em = {"UNCL": "\U0001f468\u200d\U0001f9b3", "ANTY": "\U0001f469\U0001f3fb", "KIDZ": "\U0001f476\U0001f3fb"}.get(best_etf, "")
+                    worst_etf_em = {"UNCL": "\U0001f468\u200d\U0001f9b3", "ANTY": "\U0001f469\U0001f3fb", "KIDZ": "\U0001f476\U0001f3fb"}.get(worst_etf, "")
+                    best_html = f'{best_etf_em} <b>{html_mod.escape(best_t)}</b> <span style="color:{best_color};font-weight:700;">{best_ret:+.2f}%</span>'
+                    worst_html = f'{worst_etf_em} <b>{html_mod.escape(worst_t)}</b> <span style="color:{worst_color};font-weight:700;">{worst_ret:+.2f}%</span>'
                 else:
                     best_html = "—"
                     worst_html = "—"
@@ -3616,35 +3620,38 @@ with tab_dashboard:
                     _etf_parts = []
                     for e in sorted(_etf_counts, key=_etf_counts.get, reverse=True):
                         _em = _etf_emoji_map.get(e, "")
-                        _etf_parts.append(f'{_em} {_etf_counts[e]}')
+                        _etf_parts.append(f'{_em}{_etf_counts[e]}')
                     _top_etf_html = "<br>".join(_etf_parts)
                 else:
                     _top_etf_html = "\u2014"
 
-                _td = 'style="padding:6px 10px;border-bottom:1px solid rgba(18,51,36,0.06);font-size:0.78rem;"'
+                _td = 'style="padding:8px 8px;border-bottom:1px solid rgba(18,51,36,0.06);font-size:0.82rem;"'
                 _sector_rows += (
                     f'<tr>'
-                    f'<td style="font-weight:700;white-space:nowrap;padding:6px 10px;border-bottom:1px solid rgba(18,51,36,0.06);">{html_mod.escape(sec)}</td>'
+                    f'<td style="font-weight:700;white-space:nowrap;padding:8px 8px;border-bottom:1px solid rgba(18,51,36,0.06);font-size:0.82rem;">{html_mod.escape(sec)}</td>'
                     f'<td {_td} style="text-align:center;">{len(tickers)}</td>'
                     f'<td {_td}>{_avg_html}</td>'
-                    f'<td {_td} style="color:var(--muted);white-space:normal;min-width:200px;">{", ".join(tickers)}</td>'
+                    f'<td {_td} style="color:var(--muted);white-space:normal;">{", ".join(tickers)}</td>'
                     f'<td {_td}>{best_html}</td>'
                     f'<td {_td}>{worst_html}</td>'
-                    f'<td {_td} style="white-space:nowrap;">{_top_etf_html}</td>'
+                    f'<td {_td}>{_top_etf_html}</td>'
                     f'</tr>'
                 )
+        _th = 'style="text-align:left;padding:10px 8px;background:linear-gradient(90deg,#0d2f20,#13492f);color:#f4f0e3;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;font-family:Space Grotesk,sans-serif;white-space:nowrap;"'
         st.markdown(
-            f'<div style="margin-top:0.8rem;overflow-x:auto;">'
+            f'<div style="margin-top:0.8rem;overflow-x:auto;-webkit-overflow-scrolling:touch;">'
             f'<table style="width:100%;border-collapse:separate;border-spacing:0;border-radius:14px;'
             f'overflow:hidden;background:var(--panel-strong);border:1px solid var(--border);font-family:Space Grotesk,sans-serif;font-size:0.82rem;">'
             f'<tr>'
-            f'{"".join(f"""<th style="text-align:left;padding:8px 10px;background:linear-gradient(90deg,#0d2f20,#13492f);color:#f4f0e3;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;">{c}</th>""" for c in ["Sector","#","Avg Return","Stocks","Best","Worst","ETF Breakdown"])}'
+            f'<th {_th}>Sector</th><th {_th}>#</th><th {_th}>Avg Return</th>'
+            f'<th {_th}>Stocks</th><th {_th}>Best</th><th {_th}>Worst</th>'
+            f'<th {_th}>ETF Breakdown</th>'
             f'</tr>'
             f'{_sector_rows}'
             f'<tr style="background:rgba(18,51,36,0.04);font-weight:700;">'
-            f'<td style="padding:6px 10px;">Total</td>'
-            f'<td style="padding:6px 10px;text-align:center;">{_total_stock_count}</td>'
-            f'<td colspan="5" style="padding:6px 10px;"></td>'
+            f'<td style="padding:8px 8px;font-size:0.82rem;">Total</td>'
+            f'<td style="padding:8px 8px;text-align:center;font-size:0.82rem;">{_total_stock_count}</td>'
+            f'<td></td><td></td><td></td><td></td><td></td>'
             f'</tr>'
             f'</table></div>',
             unsafe_allow_html=True,
