@@ -1,1 +1,76 @@
-{}
+{
+  "past": [
+    {
+      "recorded_date": "2026-04-03",
+      "end_date": "2026-04-03",
+      "title": "Predicted MVP",
+      "ticker": "SNDK",
+      "confidence": 94,
+      "detail": "Strong momentum (+18.66%) + 4/5 green days",
+      "return_at_prediction": null
+    },
+    {
+      "recorded_date": "2026-04-03",
+      "end_date": "2026-04-03",
+      "title": "Predicted Benchwarmer",
+      "ticker": "TPL",
+      "confidence": 90,
+      "detail": "Dropping -14.86% with 2/5 green days",
+      "return_at_prediction": null
+    },
+    {
+      "recorded_date": "2026-04-03",
+      "end_date": "2026-04-03",
+      "title": "Danger Zone",
+      "ticker": "CIFR",
+      "confidence": 75,
+      "detail": "Dropping -11.23% over 5 days with high volatility",
+      "return_at_prediction": null
+    },
+    {
+      "recorded_date": "2026-04-03",
+      "end_date": "2026-04-03",
+      "title": "Breakout Watch",
+      "ticker": "SNDK",
+      "confidence": 70,
+      "detail": "High volatility (\u00b18.71%) with upward momentum",
+      "return_at_prediction": null
+    },
+    {
+      "recorded_date": "2026-04-03",
+      "end_date": "2026-04-03",
+      "title": "Volatility Bomb",
+      "ticker": "ARM",
+      "confidence": 70,
+      "detail": "Avg daily swing of \u00b18.78% \u2014 expect fireworks",
+      "return_at_prediction": null
+    },
+    {
+      "recorded_date": "2026-04-03",
+      "end_date": "2026-04-03",
+      "title": "Throne Challenger",
+      "ticker": "STX",
+      "confidence": 60,
+      "detail": "Most likely to dethrone SNDK next week",
+      "return_at_prediction": null
+    },
+    {
+      "recorded_date": "2026-04-03",
+      "end_date": "2026-04-03",
+      "title": "Sleeper Alert",
+      "ticker": "RBLX",
+      "confidence": 50,
+      "detail": "Bottom half but gaining +9.85% momentum",
+      "return_at_prediction": null
+    },
+    {
+      "recorded_date": "2026-04-03",
+      "end_date": "2026-04-03",
+      "title": "Head of Household",
+      "ticker": "KIDZ",
+      "confidence": 30,
+      "detail": "Avg 5-day momentum: +2.53% across 10 stocks",
+      "return_at_prediction": null
+    }
+  ]
+}

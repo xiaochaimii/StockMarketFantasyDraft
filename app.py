@@ -3119,7 +3119,7 @@ with tab_dashboard:
         </script>
         """
 
-        components.html(roast_component_html, height=len(roasts) * 85 + 40, scrolling=False)
+        components.html(roast_component_html, height=len(roasts) * 75 + 30, scrolling=False)
 
         # Next roast update time
         now_et = datetime.datetime.now(ZoneInfo("America/New_York"))
@@ -4062,7 +4062,7 @@ with tab_feud:
     var sheetUrl = '__SHEET_URL__';
     var serverEarnVotes = __EARN_VOTES__;
     // One-time reset: clear old vote data from localStorage
-    var FEUD_VERSION = 'v2';
+    var FEUD_VERSION = 'v3';
     if (localStorage.getItem('feud_version') !== FEUD_VERSION) {
       localStorage.removeItem('feud_mvp_pick');
       localStorage.removeItem('feud_hoh_pick');
