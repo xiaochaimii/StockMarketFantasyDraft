@@ -2936,7 +2936,9 @@ with tab_dashboard:
             '<div style="display:flex;align-items:center;gap:0.5rem;margin:1.2rem 0 0.5rem;">'
             '<span style="font-size:1.3rem;">\U0001f4a5</span>'
             '<span style="font-size:1.1rem;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;'
-            'color:var(--accent);">Shots Fired</span></div>',
+            'color:var(--accent);">Shots Fired</span>'
+            '<span style="font-size:0.75rem;color:gray;font-weight:400;letter-spacing:normal;text-transform:none;'
+            'margin-left:0.5rem;">reactions have a 200s cooldown</span></div>',
             unsafe_allow_html=True,
         )
 
@@ -3119,7 +3121,7 @@ with tab_dashboard:
         </script>
         """
 
-        components.html(roast_component_html, height=len(roasts) * 100 + 40, scrolling=False)
+        components.html(roast_component_html, height=len(roasts) * 75 + 20, scrolling=False)
 
         # Next roast update time
         now_et = datetime.datetime.now(ZoneInfo("America/New_York"))
