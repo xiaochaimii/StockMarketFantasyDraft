@@ -3461,9 +3461,9 @@ with tab_dashboard:
 
             stock_cell = f'<b>{html_mod.escape(display_ticker)}</b> <span style="color:var(--muted);font-size:0.78rem;">{html_mod.escape(NAME_MAP[ticker])}</span>'
             price_ret_html = format_signed_percent(ret)
-            price_ret_html = price_ret_html.replace('<span', '<span style="font-weight:700;"', 1) if '<span' in price_ret_html else f'<b>{price_ret_html}</b>'
+            price_ret_html = price_ret_html.replace('style="color:', 'style="font-weight:700;color:')
             total_ret_html = format_signed_percent(total_return)
-            total_ret_html = total_ret_html.replace('<span', '<span style="font-weight:700;"', 1) if '<span' in total_ret_html else f'<b>{total_ret_html}</b>'
+            total_ret_html = total_ret_html.replace('style="color:', 'style="font-weight:700;color:')
 
             # vs 20d SMA
             pv_sma = sig.get("price_vs_sma")
@@ -3510,8 +3510,8 @@ with tab_dashboard:
             "ETF": "",
             "Sector": "",
             "Stock": f'<b>{len(final_returns)} stocks</b>',
-            "Total Return (%)": f'<span style="font-weight:700;color:{_total_ret_color};">{_total_total_ret:+.2f}%</span>',
-            "Price Return (%)": f'<span style="font-weight:700;color:{_total_price_color};">{_total_price_ret:+.2f}%</span>',
+            "Total Return (%)": format_signed_percent(_total_total_ret).replace('style="color:', 'style="font-weight:700;color:'),
+            "Price Return (%)": format_signed_percent(_total_price_ret).replace('style="color:', 'style="font-weight:700;color:'),
             "RSI": "",
             "SMA Cross": "",
             "vs 20d SMA": "",
