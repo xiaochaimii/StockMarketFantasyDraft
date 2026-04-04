@@ -3491,22 +3491,58 @@ with tab_dashboard:
                 "Last EPS": eps_actual_cell,
             })
 
+        # Compute totals for summary row
+        _total_stake = INVESTMENT * len(final_returns)
+        _total_mkt_val = sum(INVESTMENT / start_prices[t] * end_prices[t] for t in final_returns.index)
+        _total_divs = sum(INVESTMENT / start_prices[t] * dividends.get(t, 0.0) for t in final_returns.index)
+        _total_profit = (_total_mkt_val + _total_divs) - _total_stake
+        _total_price_ret = (_total_mkt_val / _total_stake - 1) * 100
+        _total_total_ret = ((_total_mkt_val + _total_divs) / _total_stake - 1) * 100
+        _total_ret_color = "#19a05f" if _total_total_ret >= 0 else "#d14a34"
+        _total_price_color = "#19a05f" if _total_price_ret >= 0 else "#d14a34"
+
+        rows.append({
+            "Rank": '<b>Total</b>',
+            "ETF": "",
+            "Sector": "",
+            "Stock": f'<b>{len(final_returns)} stocks</b>',
+            "Total Return (%)": f'<span style="font-weight:700;color:{_total_ret_color};">{_total_total_ret:+.2f}%</span>',
+            "Price Return (%)": f'<span style="font-weight:700;color:{_total_price_color};">{_total_price_ret:+.2f}%</span>',
+            "RSI": "",
+            "SMA Cross": "",
+            "vs 20d SMA": "",
+            "Signal": "",
+            f"Start ({start_date_label})": "",
+            f"End ({end_date_label})": "",
+            "Stake": f'<b>${_total_stake:.2f}</b>',
+            "Units": "",
+            "Profit/(Loss)": f'<b>{format_signed_currency(_total_profit)}</b>',
+            "Mkt Value": f'<b>{format_signed_currency(_total_mkt_val)}</b>',
+            "Dividends": f'<b>{format_signed_currency(_total_divs)}</b>',
+            "Next Earnings": "",
+            "Est. EPS": "",
+            "Last EPS": "",
+        })
+
         df = pd.DataFrame(rows)
-        total_rows = max(len(df) - 1, 1)
+        total_row_idx = len(df) - 1
+        total_rows = max(total_row_idx - 1, 1)
 
         # Find the first row with negative total return
-        first_negative_idx = next((i for i, r in enumerate(rows) if r["Total Return (%)"].startswith("(")), None)
+        first_negative_idx = next((i for i, r in enumerate(rows[:-1]) if r["Total Return (%)"].startswith("(")), None)
 
         # Build set of matching row indices for search highlight
         search_matches = set()
         if roster_search:
-            for i, r in enumerate(rows):
-                ticker_raw = r["Ticker"].replace("👑 ", "").replace("💩 ", "")
-                if roster_search.upper() in ticker_raw.upper() or roster_search.upper() in r["Stock"].upper():
+            for i, r in enumerate(rows[:-1]):
+                stock_raw = r.get("Stock", "")
+                if roster_search.upper() in stock_raw.upper():
                     search_matches.add(i)
 
 
         def leaderboard_row_style(row):
+            if row.name == total_row_idx:
+                return ["font-weight:700; background:rgba(18,51,36,0.06); border-top:2px solid rgba(18,51,36,0.2);"] * len(row)
             fraction = row.name / total_rows
             color = interpolate_hex_color("#19a05f", "#d14a34", fraction)
             styles = [f"color: {color};"] * len(row)
@@ -3639,13 +3675,13 @@ with tab_dashboard:
                     f'<td {_td}>{_top_etf_html}</td>'
                     f'</tr>'
                 )
-        _th = 'style="text-align:left;padding:10px 8px;background:linear-gradient(90deg,#0d2f20,#13492f);color:#f4f0e3;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;font-family:Space Grotesk,sans-serif;white-space:nowrap;"'
+        _th = 'style="text-align:left;padding:10px 8px;background:linear-gradient(90deg,#0d2f20,#13492f);color:#f4f0e3;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;font-family:Space Grotesk,sans-serif;white-space:normal;line-height:1.3;"'
         st.markdown(
             f'<div style="margin-top:0.8rem;overflow-x:auto;-webkit-overflow-scrolling:touch;">'
             f'<table style="width:100%;border-collapse:separate;border-spacing:0;border-radius:14px;'
             f'overflow:hidden;background:var(--panel-strong);border:1px solid var(--border);font-family:Space Grotesk,sans-serif;font-size:0.82rem;">'
             f'<tr>'
-            f'<th {_th}>Sector</th><th {_th}>#</th><th {_th}>Avg Return</th>'
+            f'<th {_th}>Sector</th><th {_th}>#</th><th {_th}>Avg Return ({start_date.strftime("%m/%d")} - {end_date.strftime("%m/%d")})</th>'
             f'<th {_th}>Stocks</th><th {_th}>Best</th><th {_th}>Worst</th>'
             f'<th {_th}>ETF Breakdown</th>'
             f'</tr>'
