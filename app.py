@@ -4061,6 +4061,18 @@ with tab_feud:
     var stocks = __STOCKS_DATA__;
     var sheetUrl = '__SHEET_URL__';
     var serverEarnVotes = __EARN_VOTES__;
+    // One-time reset: clear old vote data from localStorage
+    var FEUD_VERSION = 'v2';
+    if (localStorage.getItem('feud_version') !== FEUD_VERSION) {
+      localStorage.removeItem('feud_mvp_pick');
+      localStorage.removeItem('feud_hoh_pick');
+      localStorage.removeItem('feud_voter_id');
+      // Clear all earnings votes
+      Object.keys(localStorage).forEach(function(k) {
+        if (k.indexOf('feud_earn_') === 0) localStorage.removeItem(k);
+      });
+      localStorage.setItem('feud_version', FEUD_VERSION);
+    }
     console.log('Feud loaded, stocks count:', stocks.length);
     var mvpInput = document.getElementById('mvpInput');
     var mvpDropdown = document.getElementById('mvpDropdown');
