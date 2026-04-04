@@ -3758,15 +3758,32 @@ with tab_feud:
 
     # Load current votes from Google Sheets
     _vote_data = {}
+    _hoh_vote_data = {}
+    _earn_vote_data = {}
     try:
-        resp = requests.get(REACTIONS_SHEET_URL + "?action=get_votes", timeout=5)
+        resp = requests.get(REACTIONS_SHEET_URL + "?action=get_mvp_votes", timeout=5)
         if resp.status_code == 200:
             _vote_data = resp.json()
+    except Exception:
+        pass
+    try:
+        resp = requests.get(REACTIONS_SHEET_URL + "?action=get_hoh_votes", timeout=5)
+        if resp.status_code == 200:
+            _hoh_vote_data = resp.json()
+    except Exception:
+        pass
+    try:
+        resp = requests.get(REACTIONS_SHEET_URL + "?action=get_earn_votes", timeout=5)
+        if resp.status_code == 200:
+            _earn_vote_data = resp.json()
     except Exception:
         pass
 
     _mvp_votes = _vote_data.get("votes", {})
     _mvp_total = _vote_data.get("total", 0)
+    _hoh_votes = _hoh_vote_data.get("votes", {})
+    _hoh_total = _hoh_vote_data.get("total", 0)
+    _earn_votes_js = json.dumps(_earn_vote_data)
 
     # Build MVP vote bars HTML
     _mvp_bars = ""
@@ -3783,6 +3800,25 @@ with tab_feud:
             _mvp_bars += (
                 f'<div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.4rem;">'
                 f'<span style="font-weight:700;font-size:0.85rem;min-width:4.5rem;">{html_mod.escape(str(ticker))}</span>'
+                f'<div style="flex:1;height:26px;background:rgba(18,51,36,0.06);border-radius:8px;overflow:hidden;">'
+                f'<div style="height:100%;width:{max(pct, 5)}%;background:{color};border-radius:8px;'
+                f'display:flex;align-items:center;padding-left:0.5rem;font-size:0.7rem;font-weight:700;color:#fff;">'
+                f'&nbsp;{pct}%</div></div>'
+                f'<span style="font-size:0.78rem;color:#5d6f65;min-width:4rem;text-align:right;">{count} votes</span>'
+                f'</div>'
+            )
+
+    # Build HOH vote bars HTML
+    _hoh_bars = ""
+    if _hoh_votes:
+        _sorted_hoh = sorted(_hoh_votes.items(), key=lambda x: -x[1])
+        _bar_colors_hoh = ["#19a05f", "#0e5f3a", "#13492f"]
+        for i, (etf, count) in enumerate(_sorted_hoh):
+            pct = int(count / _hoh_total * 100) if _hoh_total > 0 else 0
+            color = _bar_colors_hoh[min(i, len(_bar_colors_hoh) - 1)]
+            _hoh_bars += (
+                f'<div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.4rem;">'
+                f'<span style="font-weight:700;font-size:0.85rem;min-width:4.5rem;">{html_mod.escape(str(etf))}</span>'
                 f'<div style="flex:1;height:26px;background:rgba(18,51,36,0.06);border-radius:8px;overflow:hidden;">'
                 f'<div style="height:100%;width:{max(pct, 5)}%;background:{color};border-radius:8px;'
                 f'display:flex;align-items:center;padding-left:0.5rem;font-size:0.7rem;font-weight:700;color:#fff;">'
@@ -3857,17 +3893,17 @@ with tab_feud:
                 f'<div style="font-size:0.7rem;color:#5d6f65;">'
                 f'{_cal_emoji} Earnings: {html_mod.escape(_es["date"])}{_eps_part}</div>'
                 f'</div>'
-                f'<div style="display:flex;gap:0.4rem;">'
+                f'<div style="display:flex;gap:0.4rem;align-items:center;">'
                 f'<div class="earnVoteBtn" data-stock="{html_mod.escape(_es["ticker"])}" data-dir="up" '
                 f'onclick="voteEarnings(this)" '
                 f'style="padding:0.4rem 0.8rem;border:2px solid rgba(25,160,95,0.3);border-radius:10px;'
                 f'cursor:pointer;font-weight:700;font-size:0.82rem;color:#19a05f;background:white;transition:all 0.15s;">'
-                f'{_up_emoji} Up</div>'
+                f'{_up_emoji} Up <span class="earnCount" style="display:none;margin-left:0.2rem;font-size:0.7rem;opacity:0.8;"></span></div>'
                 f'<div class="earnVoteBtn" data-stock="{html_mod.escape(_es["ticker"])}" data-dir="down" '
                 f'onclick="voteEarnings(this)" '
                 f'style="padding:0.4rem 0.8rem;border:2px solid rgba(209,74,52,0.3);border-radius:10px;'
                 f'cursor:pointer;font-weight:700;font-size:0.82rem;color:#d14a34;background:white;transition:all 0.15s;">'
-                f'{_down_emoji} Down</div>'
+                f'{_down_emoji} Down <span class="earnCount" style="display:none;margin-left:0.2rem;font-size:0.7rem;opacity:0.8;"></span></div>'
                 f'</div></div>'
             )
         _earnings_cards_html += '</div>'
@@ -3877,82 +3913,82 @@ with tab_feud:
     _feud_html = f"""
     <div style="font-family:'Space Grotesk',sans-serif;color:#102018;">
 
+      <!-- Week header with date + voting deadline -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.4rem;margin-bottom:1rem;">
+        <span style="display:inline-block;background:rgba(14,95,58,0.08);color:#0e5f3a;font-size:0.75rem;
+            font-weight:700;padding:0.25rem 0.7rem;border-radius:999px;">
+          {_week_label}</span>
+        <span style="font-size:0.72rem;color:#5d6f65;">
+          {_clock_emoji} Voting closes Monday 9:00 AM ET &middot; Winner determined by Friday 4:00 PM ET close</span>
+      </div>
+
       <!-- Challenge 1: MVP -->
       <div style="background:rgba(251,253,250,0.96);border:1px solid rgba(18,51,36,0.12);
           border-radius:20px;padding:1.2rem 1.4rem;box-shadow:0 12px 24px rgba(82,58,32,0.08);margin-bottom:1.2rem;">
         <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#5d6f65;margin-bottom:0.3rem;">
           Weekly Challenge #1</div>
         <div style="font-size:1.05rem;font-weight:700;margin-bottom:0.2rem;">
-          {_trophy_emoji} Who will be MVP next week?
-          <span style="display:inline-block;background:rgba(14,95,58,0.08);color:#0e5f3a;font-size:0.68rem;
-              font-weight:700;padding:0.15rem 0.5rem;border-radius:999px;margin-left:0.4rem;vertical-align:middle;">
-            {_week_label}</span>
-        </div>
+          {_trophy_emoji} Who will be MVP next week?</div>
         <div style="font-size:0.78rem;color:#5d6f65;margin-bottom:0.6rem;">
           The stock with the highest total return Mon–Fri wins.</div>
 
         {_mvp_input_html}
 
-        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#5d6f65;margin-top:0.3rem;margin-bottom:0.3rem;">
+        <div id="mvpVoteHeader" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#5d6f65;margin-top:0.3rem;margin-bottom:0.3rem;">
           Community Votes ({_mvp_total} total)</div>
-        {_mvp_bars if _mvp_bars else _no_votes_html}
+        <div id="mvpVoteBars">{_mvp_bars if _mvp_bars else _no_votes_html}</div>
       </div>
 
       <!-- Challenge 2: HOH -->
       <div style="background:rgba(251,253,250,0.96);border:1px solid rgba(18,51,36,0.12);
-          border-radius:20px;padding:1.2rem 1.4rem;box-shadow:0 12px 24px rgba(82,58,32,0.08);">
+          border-radius:20px;padding:1.2rem 1.4rem;box-shadow:0 12px 24px rgba(82,58,32,0.08);margin-bottom:1.2rem;">
         <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#5d6f65;margin-bottom:0.3rem;">
           Weekly Challenge #2</div>
         <div style="font-size:1.05rem;font-weight:700;margin-bottom:0.2rem;">
-          {_house_emoji} Who will be Head of Household?
-          <span style="display:inline-block;background:rgba(14,95,58,0.08);color:#0e5f3a;font-size:0.68rem;
-              font-weight:700;padding:0.15rem 0.5rem;border-radius:999px;margin-left:0.4rem;vertical-align:middle;">
-            {_week_label}</span>
-        </div>
+          {_house_emoji} Who will be Head of Household?</div>
         <div style="font-size:0.78rem;color:#5d6f65;margin-bottom:0.6rem;">
           The ETF with the highest average return Mon–Fri wins.</div>
 
         {_hoh_input_html}
 
-        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#5d6f65;margin-top:0.3rem;margin-bottom:0.3rem;">
-          Community Votes</div>
-        <div style="font-size:0.8rem;color:#5d6f65;">HOH votes will appear here after first vote.</div>
-      </div>
-
-      <div style="margin-top:0.6rem;font-size:0.72rem;color:#5d6f65;">
-        {_clock_emoji} Voting closes Monday 9:00 AM ET &middot; Winner determined by Friday 4:00 PM ET close
+        <div id="hohVoteHeader" style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#5d6f65;margin-top:0.3rem;margin-bottom:0.3rem;">
+          Community Votes ({_hoh_total} total)</div>
+        <div id="hohVoteBars">{_hoh_bars if _hoh_bars else '<div style="font-size:0.8rem;color:#5d6f65;">No votes yet &mdash; be the first!</div>'}</div>
       </div>
 
       <!-- Challenge 3: Earnings -->
       <div style="background:rgba(251,253,250,0.96);border:1px solid rgba(18,51,36,0.12);
-          border-radius:20px;padding:1.2rem 1.4rem;box-shadow:0 12px 24px rgba(82,58,32,0.08);margin-top:1rem;">
+          border-radius:20px;padding:1.2rem 1.4rem;box-shadow:0 12px 24px rgba(82,58,32,0.08);">
         <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#5d6f65;margin-bottom:0.3rem;">
           Weekly Challenge #3</div>
         <div style="font-size:1.05rem;font-weight:700;margin-bottom:0.2rem;">
-          {_chart_emoji} Earnings Roulette
-          <span style="display:inline-block;background:rgba(14,95,58,0.08);color:#0e5f3a;font-size:0.68rem;
-              font-weight:700;padding:0.15rem 0.5rem;border-radius:999px;margin-left:0.4rem;vertical-align:middle;">
-            {_week_label}</span>
-        </div>
+          {_chart_emoji} Earnings Roulette</div>
         <div style="font-size:0.78rem;color:#5d6f65;margin-bottom:0.8rem;">
           Will the stock go UP or DOWN after earnings? Vote before earnings day at market close.</div>
         {_earnings_cards_html}
       </div>
     </div>
 
+    """
+
+    # Inject data as a separate script block using f-string
+    _feud_data_js = f"""
     <script>
     var stocks = {_stock_list_js};
     var sheetUrl = '{REACTIONS_SHEET_URL}';
+    var serverEarnVotes = {_earn_votes_js};
     </script>
     """
 
-    # JS with backslashes must be a regular string, not f-string
+    # JS logic as regular string (not f-string) to avoid curly brace escaping
     _feud_js = """
     <script>
+    console.log('Feud loaded, stocks count:', stocks.length);
     var mvpInput = document.getElementById('mvpInput');
     var mvpDropdown = document.getElementById('mvpDropdown');
     if (mvpInput) {
       mvpInput.addEventListener('focus', function() { renderMvpDD(this.value); });
+      mvpInput.addEventListener('click', function() { renderMvpDD(this.value); });
       mvpInput.addEventListener('input', function() { renderMvpDD(this.value); });
       document.addEventListener('click', function(e) {
         if (!e.target.closest('#mvp-search-wrap')) mvpDropdown.style.display = 'none';
@@ -3969,13 +4005,19 @@ with tab_feud:
       } else {
         mvpDropdown.innerHTML = f.map(function(s) {
           return '<div style="padding:0.5rem 0.9rem;cursor:pointer;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;" ' +
-            'onmouseover="this.style.background=\'rgba(14,95,58,0.06)\'" onmouseout="this.style.background=\'\'" ' +
-            'onclick="selectMvp(\'' + s.ticker + '\',\'' + s.name + '\')">' +
+            'onmouseover="this.style.background=\\\'rgba(14,95,58,0.06)\\\'" onmouseout="this.style.background=\\\'\\\'" ' +
+            'onclick="selectMvp(\\\'' + s.ticker + '\\\',\\\'' + s.name + '\\\')">' +
             '<span><b>' + s.ticker + '</b> <span style="color:#5d6f65;font-size:0.78rem;">' + s.name + '</span></span>' +
             '<span style="font-size:0.65rem;font-weight:700;padding:0.1rem 0.4rem;border-radius:999px;background:rgba(14,95,58,0.08);color:#0e5f3a;">' + s.etf + '</span></div>';
         }).join('');
       }
       mvpDropdown.style.display = 'block';
+    }
+
+    function getVoterId() {
+      var voterId = localStorage.getItem('feud_voter_id');
+      if (!voterId) { voterId = 'anon_' + Math.random().toString(36).substr(2, 9); localStorage.setItem('feud_voter_id', voterId); }
+      return voterId;
     }
 
     function selectMvp(ticker, name) {
@@ -3985,15 +4027,55 @@ with tab_feud:
       document.getElementById('mvpPick').style.display = 'block';
       document.getElementById('mvpPickTicker').textContent = ticker;
       document.getElementById('mvpPickName').textContent = name;
-      var voterId = localStorage.getItem('feud_voter_id');
-      if (!voterId) { voterId = 'anon_' + Math.random().toString(36).substr(2, 9); localStorage.setItem('feud_voter_id', voterId); }
-      fetch(sheetUrl + '?action=vote&voter=' + encodeURIComponent(voterId) + '&pick=' + encodeURIComponent(ticker)).catch(function(){});
       localStorage.setItem('feud_mvp_pick', ticker);
+      var voterId = getVoterId();
+      fetch(sheetUrl + '?action=mvp_vote&voter=' + encodeURIComponent(voterId) + '&pick=' + encodeURIComponent(ticker))
+        .then(function() { return fetch(sheetUrl + '?action=get_mvp_votes'); })
+        .then(function(r) { return r.json(); })
+        .then(function(data) { renderVoteBars('mvpVoteHeader', 'mvpVoteBars', data); })
+        .catch(function(){});
+    }
+
+    function renderVoteBars(headerId, barsId, data) {
+      var votes = data.votes || {};
+      var total = data.total || 0;
+      var header = document.getElementById(headerId);
+      var bars = document.getElementById(barsId);
+      if (header) header.textContent = 'Community Votes (' + total + ' total)';
+      if (!bars) return;
+      var sorted = Object.entries(votes).sort(function(a, b) { return b[1] - a[1]; });
+      var top = sorted.slice(0, 4);
+      var otherCount = sorted.slice(4).reduce(function(s, x) { return s + x[1]; }, 0);
+      if (otherCount > 0) top.push(['Other', otherCount]);
+      var colors = ['#19a05f', '#0e5f3a', '#13492f', '#5d6f65', '#b8b8b8'];
+      if (!top.length) {
+        bars.innerHTML = '<div style="font-size:0.8rem;color:#5d6f65;">No votes yet \\u2014 be the first!</div>';
+        return;
+      }
+      bars.innerHTML = top.map(function(item, i) {
+        var ticker = item[0], count = item[1];
+        var pct = total > 0 ? Math.round(count / total * 100) : 0;
+        var color = colors[Math.min(i, colors.length - 1)];
+        return '<div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.4rem;">' +
+          '<span style="font-weight:700;font-size:0.85rem;min-width:4.5rem;">' + ticker + '</span>' +
+          '<div style="flex:1;height:26px;background:rgba(18,51,36,0.06);border-radius:8px;overflow:hidden;">' +
+          '<div style="height:100%;width:' + Math.max(pct, 5) + '%;background:' + color + ';border-radius:8px;' +
+          'display:flex;align-items:center;padding-left:0.5rem;font-size:0.7rem;font-weight:700;color:#fff;">' +
+          '\\u00a0' + pct + '%</div></div>' +
+          '<span style="font-size:0.78rem;color:#5d6f65;min-width:4rem;text-align:right;">' + count + ' votes</span></div>';
+      }).join('');
     }
 
     function changeMvp() {
       document.getElementById('mvp-search-wrap').style.display = 'block';
       document.getElementById('mvpPick').style.display = 'none';
+      localStorage.removeItem('feud_mvp_pick');
+      var voterId = getVoterId();
+      fetch(sheetUrl + '?action=mvp_remove&voter=' + encodeURIComponent(voterId))
+        .then(function() { return fetch(sheetUrl + '?action=get_mvp_votes'); })
+        .then(function(r) { return r.json(); })
+        .then(function(data) { renderVoteBars('mvpVoteHeader', 'mvpVoteBars', data); })
+        .catch(function(){});
       if (mvpInput) mvpInput.focus();
     }
 
@@ -4009,6 +4091,21 @@ with tab_feud:
     }
 
     function selectHoh(btn, etf) {
+      var currentPick = localStorage.getItem('feud_hoh_pick');
+      var voterId = getVoterId();
+      if (currentPick === etf) {
+        // Deselect: clicking same button again
+        btn.style.borderColor = 'rgba(18,51,36,0.12)';
+        btn.style.background = 'white';
+        btn.style.color = '#102018';
+        localStorage.removeItem('feud_hoh_pick');
+        fetch(sheetUrl + '?action=hoh_remove&voter=' + encodeURIComponent(voterId))
+          .then(function() { return fetch(sheetUrl + '?action=get_hoh_votes'); })
+          .then(function(r) { return r.json(); })
+          .then(function(data) { renderVoteBars('hohVoteHeader', 'hohVoteBars', data); })
+          .catch(function(){});
+        return;
+      }
       document.querySelectorAll('.hohBtn').forEach(function(b) {
         b.style.borderColor = 'rgba(18,51,36,0.12)';
         b.style.background = 'white';
@@ -4018,9 +4115,11 @@ with tab_feud:
       btn.style.background = 'rgba(14,95,58,0.1)';
       btn.style.color = '#0e5f3a';
       localStorage.setItem('feud_hoh_pick', etf);
-      var voterId = localStorage.getItem('feud_voter_id');
-      if (!voterId) { voterId = 'anon_' + Math.random().toString(36).substr(2, 9); localStorage.setItem('feud_voter_id', voterId); }
-      fetch(sheetUrl + '?action=vote&voter=' + encodeURIComponent('hoh_' + voterId) + '&pick=' + encodeURIComponent(etf)).catch(function(){});
+      fetch(sheetUrl + '?action=hoh_vote&voter=' + encodeURIComponent(voterId) + '&pick=' + encodeURIComponent(etf))
+        .then(function() { return fetch(sheetUrl + '?action=get_hoh_votes'); })
+        .then(function(r) { return r.json(); })
+        .then(function(data) { renderVoteBars('hohVoteHeader', 'hohVoteBars', data); })
+        .catch(function(){});
     }
 
     var savedHoh = localStorage.getItem('feud_hoh_pick');
@@ -4035,11 +4134,54 @@ with tab_feud:
     }
 
     // --- Earnings Vote ---
+    function updateEarnCounts(stock, serverData) {
+      var data = serverData || serverEarnVotes;
+      var stockData = data[stock] || { up: 0, down: 0 };
+      document.querySelectorAll('.earnVoteBtn').forEach(function(b) {
+        if (b.dataset.stock !== stock) return;
+        var countEl = b.querySelector('.earnCount');
+        if (!countEl) return;
+        var count = stockData[b.dataset.dir] || 0;
+        if (count > 0) {
+          countEl.textContent = '(' + count + ')';
+          countEl.style.display = 'inline';
+        } else {
+          countEl.textContent = '';
+          countEl.style.display = 'none';
+        }
+      });
+    }
+
+    function refreshEarnVotes(stock) {
+      fetch(sheetUrl + '?action=get_earn_votes')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          serverEarnVotes = data;
+          updateEarnCounts(stock, data);
+        })
+        .catch(function(){});
+    }
+
     function voteEarnings(btn) {
       var stock = btn.dataset.stock;
       var dir = btn.dataset.dir;
-      // Deselect siblings
+      var currentVote = localStorage.getItem('feud_earn_' + stock);
       var parent = btn.parentElement;
+      var voterId = getVoterId();
+      var voterKey = 'earn_' + voterId + '_' + stock;
+
+      // If clicking the same vote, deselect
+      if (currentVote === dir) {
+        btn.style.background = 'white';
+        btn.style.borderColor = dir === 'up' ? 'rgba(25,160,95,0.3)' : 'rgba(209,74,52,0.3)';
+        localStorage.removeItem('feud_earn_' + stock);
+        fetch(sheetUrl + '?action=earn_remove&voter=' + encodeURIComponent(voterKey))
+          .then(function() { refreshEarnVotes(stock); })
+          .catch(function(){});
+        return;
+      }
+
+      // Deselect siblings
       parent.querySelectorAll('.earnVoteBtn').forEach(function(b) {
         b.style.background = 'white';
         b.style.borderColor = b.dataset.dir === 'up' ? 'rgba(25,160,95,0.3)' : 'rgba(209,74,52,0.3)';
@@ -4053,15 +4195,15 @@ with tab_feud:
         btn.style.borderColor = '#d14a34';
       }
       localStorage.setItem('feud_earn_' + stock, dir);
-      // Save to Google Sheets
-      var voterId = localStorage.getItem('feud_voter_id');
-      if (!voterId) { voterId = 'anon_' + Math.random().toString(36).substr(2, 9); localStorage.setItem('feud_voter_id', voterId); }
-      fetch(sheetUrl + '?action=vote&voter=' + encodeURIComponent('earn_' + voterId + '_' + stock) + '&pick=' + encodeURIComponent(stock + '_' + dir)).catch(function(){});
+      fetch(sheetUrl + '?action=earn_vote&voter=' + encodeURIComponent(voterKey) + '&pick=' + encodeURIComponent(stock + '_' + dir))
+        .then(function() { refreshEarnVotes(stock); })
+        .catch(function(){});
     }
 
-    // Restore earnings votes
+    // Restore earnings votes and counts
     document.querySelectorAll('.earnVoteBtn').forEach(function(btn) {
-      var saved = localStorage.getItem('feud_earn_' + btn.dataset.stock);
+      var stock = btn.dataset.stock;
+      var saved = localStorage.getItem('feud_earn_' + stock);
       if (saved === btn.dataset.dir) {
         if (saved === 'up') {
           btn.style.background = 'rgba(25,160,95,0.12)';
@@ -4071,6 +4213,7 @@ with tab_feud:
           btn.style.borderColor = '#d14a34';
         }
       }
+      updateEarnCounts(stock);
     });
 
     function resizeFrame() {
@@ -4083,7 +4226,7 @@ with tab_feud:
     setTimeout(resizeFrame, 300);
     </script>
     """
-    _feud_html += _feud_js
+    _feud_html += _feud_data_js + _feud_js
 
     _feud_base_height = 700 + len(_next_week_earnings) * 70 + (150 if _next_week_earnings else 80)
     components.html(_feud_html, height=_feud_base_height, scrolling=False)
