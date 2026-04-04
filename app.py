@@ -135,11 +135,15 @@ REFRESH_INTERVAL = timedelta(seconds=3600) if is_market_open() else None
 
 
 def format_signed_currency(value):
-    return f"${value:.2f}" if value >= 0 else f"(${abs(value):.2f})"
+    if value >= 0:
+        return f'<span style="color:#19a05f;">${value:.2f}</span>'
+    return f'<span style="color:#d14a34;">(${abs(value):.2f})</span>'
 
 
 def format_signed_percent(value):
-    return f"{value:.2f}%" if value >= 0 else f"({abs(value):.2f}%)"
+    if value >= 0:
+        return f'<span style="color:#19a05f;">{value:.2f}%</span>'
+    return f'<span style="color:#d14a34;">({abs(value):.2f}%)</span>'
 
 
 def interpolate_hex_color(start_hex, end_hex, fraction):
@@ -3484,8 +3488,8 @@ with tab_dashboard:
                 "Stake": f"${INVESTMENT:.2f}",
                 "Units": f"{shares:.4f}",
                 "Profit/(Loss)": format_signed_currency(profit),
-                "Mkt Value": format_signed_currency(market_value),
-                "Dividends": format_signed_currency(div_income),
+                "Mkt Value": f'<span style="color:{"#19a05f" if market_value >= INVESTMENT else "#d14a34"};">${market_value:.2f}</span>',
+                "Dividends": f'<span style="color:#19a05f;">${div_income:.2f}</span>' if div_income > 0 else f'${div_income:.2f}',
                 "Next Earnings": earn_cell,
                 "Est. EPS": eps_est_cell,
                 "Last EPS": eps_actual_cell,
@@ -3517,8 +3521,8 @@ with tab_dashboard:
             "Stake": f'<b>${_total_stake:.2f}</b>',
             "Units": "",
             "Profit/(Loss)": f'<b>{format_signed_currency(_total_profit)}</b>',
-            "Mkt Value": f'<b>{format_signed_currency(_total_mkt_val)}</b>',
-            "Dividends": f'<b>{format_signed_currency(_total_divs)}</b>',
+            "Mkt Value": f'<b><span style="color:{"#19a05f" if _total_mkt_val >= _total_stake else "#d14a34"};">${_total_mkt_val:.2f}</span></b>',
+            "Dividends": f'<b><span style="color:#19a05f;">${_total_divs:.2f}</span></b>' if _total_divs > 0 else f'<b>${_total_divs:.2f}</b>',
             "Next Earnings": "",
             "Est. EPS": "",
             "Last EPS": "",
@@ -3529,7 +3533,7 @@ with tab_dashboard:
         total_rows = max(total_row_idx - 1, 1)
 
         # Find the first row with negative total return
-        first_negative_idx = next((i for i, r in enumerate(rows[:-1]) if r["Total Return (%)"].startswith("(")), None)
+        first_negative_idx = next((i for i, r in enumerate(rows[:-1]) if "#d14a34" in r["Total Return (%)"]), None)
 
         # Build set of matching row indices for search highlight
         search_matches = set()
