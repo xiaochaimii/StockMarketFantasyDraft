@@ -1558,9 +1558,14 @@ def fetch_earnings(tickers_tuple):
     return dict(results)
 
 
-def compute_throne_history(returns, valid_tickers, name_map):
+def compute_throne_history(returns, valid_tickers, name_map, dividends=None, start_prices=None):
     """Compute MVP/Benchwarmer streak counts and transition history."""
-    daily_returns = returns[valid_tickers]
+    daily_returns = returns[valid_tickers].copy()
+    # Add dividend return to get total return per ticker
+    if dividends and start_prices is not None:
+        for t in valid_tickers:
+            div_ret = (dividends.get(t, 0.0) / start_prices[t]) * 100 if start_prices[t] else 0
+            daily_returns[t] = daily_returns[t] + div_ret
     if len(daily_returns) > 1:
         daily_returns = daily_returns.iloc[1:]
     mvp_series = daily_returns.idxmax(axis=1)
@@ -1642,10 +1647,15 @@ def compute_throne_history(returns, valid_tickers, name_map):
 
 
 
-def compute_superlatives(returns, valid_tickers, name_map, etf_map, throne):
+def compute_superlatives(returns, valid_tickers, name_map, etf_map, throne, dividends=None, start_prices=None):
     """Compute fun superlative stats."""
     results = {}
-    daily = returns[valid_tickers]
+    daily = returns[valid_tickers].copy()
+    # Add dividend return for total-return-based rankings
+    if dividends and start_prices is not None:
+        for t in valid_tickers:
+            div_ret = (dividends.get(t, 0.0) / start_prices[t]) * 100 if start_prices[t] else 0
+            daily[t] = daily[t] + div_ret
     daily_changes = daily.diff()
 
     # --- Best Single Day / Worst Single Day ---
@@ -1873,7 +1883,11 @@ def generate_trash_talk(throne, superlatives, final_returns, name_map, etf_map, 
 def compute_achievements(returns, valid_tickers, name_map, dividends, throne, final_returns, start_prices, investment):
     """Compute fun achievement badges."""
     badges = []
-    daily = returns[valid_tickers]
+    daily = returns[valid_tickers].copy()
+    # Add dividend return for total-return-based MVP
+    for t in valid_tickers:
+        div_ret = (dividends.get(t, 0.0) / start_prices[t]) * 100 if start_prices[t] else 0
+        daily[t] = daily[t] + div_ret
     daily_changes = daily.diff()
 
     # Diamond Hands: held MVP for 10+ days total
@@ -2500,12 +2514,17 @@ with tab_dashboard:
         st.session_state["_end_prices"] = end_prices
         st.session_state["_dividends"] = dividends
 
-        # --- Rank tickers by final return ---
-        final_returns = returns[valid_tickers].iloc[-1].sort_values(ascending=False)
+        # --- Rank tickers by total return (price + dividends) ---
+        price_returns = returns[valid_tickers].iloc[-1]
+        total_returns_series = pd.Series({
+            t: ((INVESTMENT / start_prices[t] * end_prices[t] + INVESTMENT / start_prices[t] * dividends.get(t, 0.0)) / INVESTMENT - 1) * 100
+            for t in valid_tickers
+        }).sort_values(ascending=False)
+        final_returns = total_returns_series
         top10_tickers = final_returns.head(10).index.tolist()
         bottom10_tickers = final_returns.tail(10).index.tolist()
 
-        # Compute rank changes vs yesterday for arrows
+        # Compute rank changes vs yesterday for arrows (still price-based since we lack intraday dividend data)
         if len(returns) >= 2:
             prev_returns = returns[valid_tickers].iloc[-2].sort_values(ascending=False)
             prev_ranks = {ticker: rank for rank, ticker in enumerate(prev_returns.index, start=1)}
@@ -2526,8 +2545,8 @@ with tab_dashboard:
         medals = ["🥇", "🥈", "🥉"]
         best_ticker = final_returns.index[0]
         worst_ticker = final_returns.index[-1]
-        throne = compute_throne_history(returns, valid_tickers, NAME_MAP)
-        superlatives = compute_superlatives(returns, valid_tickers, NAME_MAP, ETF_MAP, throne)
+        throne = compute_throne_history(returns, valid_tickers, NAME_MAP, dividends, start_prices)
+        superlatives = compute_superlatives(returns, valid_tickers, NAME_MAP, ETF_MAP, throne, dividends, start_prices)
 
         # --- Live status indicator with countdown ---
         now_et = datetime.datetime.now(ZoneInfo("America/New_York"))
@@ -3630,7 +3649,7 @@ with tab_dashboard:
             eps_actual_cell = f'${eps_actual:.2f}' if eps_actual is not None else '<span style="color:var(--muted);">\u2014</span>'
 
             stock_cell = f'<b>{html_mod.escape(display_ticker)}</b> <span style="color:var(--muted);font-size:0.78rem;">{html_mod.escape(NAME_MAP[ticker])}</span>'
-            price_ret_html = format_signed_percent(ret)
+            price_ret_html = format_signed_percent(price_returns[ticker])
             price_ret_html = price_ret_html.replace('style="color:', 'style="font-weight:700;color:')
             total_ret_html = format_signed_percent(total_return)
             total_ret_html = total_ret_html.replace('style="color:', 'style="font-weight:700;color:')
@@ -3660,6 +3679,7 @@ with tab_dashboard:
                 "Profit/(Loss)": format_signed_currency(profit),
                 "Mkt Value": f'<span style="color:{"#19a05f" if market_value >= INVESTMENT else "#d14a34"};">${market_value:.2f}</span>',
                 "Dividends": f'<span style="color:#19a05f;">${div_income:.2f}</span>' if div_income > 0 else f'${div_income:.2f}',
+                "Total Value": f'<span style="color:{"#19a05f" if final_value >= INVESTMENT else "#d14a34"};">${final_value:.2f}</span>',
                 "Next Earnings": earn_cell,
                 "Est. EPS": eps_est_cell,
                 "Last EPS": eps_actual_cell,
@@ -3693,6 +3713,7 @@ with tab_dashboard:
             "Profit/(Loss)": f'<b>{format_signed_currency(_total_profit)}</b>',
             "Mkt Value": f'<b><span style="color:{"#19a05f" if _total_mkt_val >= _total_stake else "#d14a34"};">${_total_mkt_val:.2f}</span></b>',
             "Dividends": f'<b><span style="color:#19a05f;">${_total_divs:.2f}</span></b>' if _total_divs > 0 else f'<b>${_total_divs:.2f}</b>',
+            "Total Value": f'<b><span style="color:{"#19a05f" if (_total_mkt_val + _total_divs) >= _total_stake else "#d14a34"};">${_total_mkt_val + _total_divs:.2f}</span></b>',
             "Next Earnings": "",
             "Est. EPS": "",
             "Last EPS": "",
@@ -3714,12 +3735,21 @@ with tab_dashboard:
                     search_matches.add(i)
 
 
+        # Columns that use their own semantic colors (green/red) — don't override with row gradient
+        _own_color_cols = {"Total Return (%)", "Price Return (%)", "RSI", "SMA Cross",
+                           "vs 20d SMA", "Signal", "Profit/(Loss)", "Mkt Value", "Dividends", "Total Value"}
+
         def leaderboard_row_style(row):
             if row.name == total_row_idx:
                 return ["font-weight:700; background:rgba(18,51,36,0.06); border-top:2px solid rgba(18,51,36,0.2);"] * len(row)
             fraction = row.name / total_rows
             color = interpolate_hex_color("#19a05f", "#d14a34", fraction)
-            styles = [f"color: {color};"] * len(row)
+            styles = []
+            for col in row.index:
+                if col in _own_color_cols:
+                    styles.append("")
+                else:
+                    styles.append(f"color: {color};")
             if row.name == first_negative_idx:
                 styles = [s + " border-top: 3px solid #102018;" for s in styles]
             if row.name in search_matches:
