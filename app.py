@@ -4228,7 +4228,7 @@ with tab_feud:
     """
     _feud_html += _feud_data_js + _feud_js
 
-    _feud_base_height = 700 + len(_next_week_earnings) * 70 + (150 if _next_week_earnings else 80)
+    _feud_base_height = 480 + len(_next_week_earnings) * 65 + (120 if _next_week_earnings else 60)
     components.html(_feud_html, height=_feud_base_height, scrolling=False)
 
     # --- System Predictions (moved from Dashboard) ---
