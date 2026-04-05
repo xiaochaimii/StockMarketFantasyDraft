@@ -977,7 +977,7 @@ st.markdown("""
 }
 .sup-multi-bar .multi-label {
     font-weight: 700;
-    color: var(--accent-2);
+    color: #b45309;
 }
 .sup-multi-stock {
     display: inline-flex;
@@ -1299,6 +1299,14 @@ PLAYERS = config["players"]
 TICKERS = [p["ticker"] for p in PLAYERS]
 NAME_MAP = {p["ticker"]: p["name"] for p in PLAYERS}
 ETF_MAP = {p["ticker"]: p.get("etf", "") for p in PLAYERS}
+_ETF_CLR = {"ANTY": "#a855f7", "UNCL": "#3b82f6", "KIDZ": "#eab308"}
+def _etf_colored(ticker, escaped=False):
+    """Return ticker wrapped in a colored span based on its ETF."""
+    t = ticker if escaped else html_mod.escape(ticker)
+    clr = _ETF_CLR.get(ETF_MAP.get(ticker, ""), "")
+    if clr:
+        return f'<span style="color:{clr};font-weight:700;">{t}</span>'
+    return f'<b>{t}</b>'
 
 SECTOR_MAP = {
     "AAPL": "Tech", "AB": "Finance", "ALK": "Transport", "AMD": "Tech", "AMZN": "Tech",
@@ -2721,7 +2729,7 @@ with tab_dashboard:
                 f'<div>'
                 f'<div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.25rem;">'
                 f'<span style="font-size:0.9rem;">{rank_label}</span>'
-                f'<span style="font-size:1.05rem;font-weight:800;">{html_mod.escape(ticker)}</span>'
+                f'<span style="font-size:1.05rem;">{_etf_colored(ticker)}</span>'
                 f'<span style="font-size:0.85rem;">{_etf_em}</span>'
                 f'</div>'
                 f'<div style="font-size:0.75rem;color:var(--muted);">{html_mod.escape(NAME_MAP.get(ticker, ""))} · {SECTOR_MAP.get(ticker, "")}</div>'
@@ -2786,7 +2794,7 @@ with tab_dashboard:
                 f'<div style="background:var(--panel-strong);border:1px solid var(--border);border-radius:16px;'
                 f'padding:1rem 1.2rem;border-left:3px solid {_ec};">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.7rem;">'
-                f'<div><div style="font-size:1.1rem;font-weight:800;">{_etf_emoji_top[etf_code]} {etf_code}</div>'
+                f'<div><div style="font-size:1.1rem;font-weight:800;">{_etf_emoji_top[etf_code]} <span style="color:{_ec};">{etf_code}</span></div>'
                 f'<div style="font-size:0.7rem;color:var(--muted);">{len(_etf_tickers_t)} stocks · Managed by {_etf_names_top[etf_code]}</div></div>'
                 f'<div style="text-align:right;"><div style="font-size:1.2rem;font-weight:800;color:{_rc};">{_etf_ar:+.2f}%</div>'
                 f'<div style="font-size:0.68rem;color:var(--muted);">Avg Total Return</div></div></div>'
@@ -2804,8 +2812,8 @@ with tab_dashboard:
                 f'<div style="width:{_wp}%;background:rgba(25,160,95,0.12);display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:700;color:#19a05f;">{_etf_w} ↑</div>'
                 f'<div style="width:{_lp}%;background:rgba(209,74,52,0.1);display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:700;color:#d14a34;">{_etf_l} ↓</div></div>'
                 f'<div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-top:0.5rem;">'
-                f'<span>Best: <b style="color:#19a05f;">{_etf_bt} {_etf_rt[_etf_bt]:+.2f}%</b></span>'
-                f'<span>Worst: <b style="color:#d14a34;">{_etf_wt} {_etf_rt[_etf_wt]:+.2f}%</b></span>'
+                f'<span>Best: {_etf_colored(_etf_bt)} <b style="color:#19a05f;">{_etf_rt[_etf_bt]:+.2f}%</b></span>'
+                f'<span>Worst: {_etf_colored(_etf_wt)} <b style="color:#d14a34;">{_etf_rt[_etf_wt]:+.2f}%</b></span>'
                 f'</div></div>'
             )
 
@@ -2957,9 +2965,9 @@ with tab_dashboard:
                     _bs_worst_surp_b = _surp
                     _bs_worst_b = (t, _rep, _est_e, _surp)
         if _bs_best_b and _bs_best_surp_b > 0:
-            badges_data.append(("📊", "Beat Street", f'{_bs_best_b[0]} (${_bs_best_b[1]:.2f} vs est ${_bs_best_b[2]:.2f}, +{_bs_best_surp_b:.1f}%)', "Biggest EPS beat"))
+            badges_data.append(("🐂", "Beat Street", f'{_bs_best_b[0]} (${_bs_best_b[1]:.2f} vs est ${_bs_best_b[2]:.2f}, +{_bs_best_surp_b:.1f}%)', "Biggest EPS beat"))
         if _bs_worst_b and _bs_worst_surp_b < 0:
-            badges_data.append(("📉", "Street Loser", f'{_bs_worst_b[0]} (${_bs_worst_b[1]:.2f} vs est ${_bs_worst_b[2]:.2f}, {_bs_worst_surp_b:.1f}%)', "Biggest EPS miss"))
+            badges_data.append(("🐻", "Street Loser", f'{_bs_worst_b[0]} (${_bs_worst_b[1]:.2f} vs est ${_bs_worst_b[2]:.2f}, {_bs_worst_surp_b:.1f}%)', "Biggest EPS miss"))
 
         # Multi-Award bar: find stocks that appear in multiple badges
         ticker_badges = {}
@@ -2981,13 +2989,47 @@ with tab_dashboard:
                 ticker_badges.setdefault(t, []).append((icon, name))
         multi_badge_tickers = {t: badges for t, badges in ticker_badges.items() if len(badges) > 1}
 
+        # ETF award count
+        _etf_award_counts = {"ANTY": 0, "UNCL": 0, "KIDZ": 0}
+        for icon, name, holder, desc in badges_data:
+            base = holder.split(" (")[0] if holder else ""
+            tickers_in = []
+            if " vs " in base:
+                tickers_in = [p.strip() for p in base.split(" vs ")]
+            else:
+                t = base.split(" ")[0] if base else ""
+                if t:
+                    tickers_in = [t]
+            for t in tickers_in:
+                etf = ETF_MAP.get(t, "")
+                if etf in _etf_award_counts:
+                    _etf_award_counts[etf] += 1
+        _etf_emoji_aw = {"ANTY": "\U0001f469\U0001f3fb", "UNCL": "\U0001f468\u200d\U0001f9b3", "KIDZ": "\U0001f476\U0001f3fb"}
+        _etf_bar_parts = []
+        for code in ["ANTY", "UNCL", "KIDZ"]:
+            c = _etf_award_counts[code]
+            clr = _ETF_CLR[code]
+            _etf_bar_parts.append(
+                f'<span style="display:inline-flex;align-items:center;gap:0.3rem;">'
+                f'{_etf_emoji_aw[code]} <span style="color:{clr};font-weight:700;">{code}</span> '
+                f'<span style="font-weight:600;">{c}</span></span>'
+            )
+
+        _combined_html = '<div class="sup-multi-bar" style="flex-direction:column;align-items:flex-start;gap:0.4rem;">'
         if multi_badge_tickers:
-            multi_html = '<div class="sup-multi-bar"><span class="multi-label">\U0001f3c6 Multi-Award:</span>'
+            _combined_html += '<div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">'
+            _combined_html += '<span class="multi-label">🎯 Multi-Award:</span>'
             for t, badge_list in sorted(multi_badge_tickers.items(), key=lambda x: -len(x[1])):
                 badge_icons = "".join(f'{i}' for i, _ in badge_list)
-                multi_html += f'<span class="sup-multi-stock"><b>{html_mod.escape(t)}</b> {badge_icons}</span>'
-            multi_html += '</div>'
-            st.markdown(multi_html, unsafe_allow_html=True)
+                _combined_html += f'<span class="sup-multi-stock">{_etf_colored(t)} {badge_icons}</span>'
+            _combined_html += '</div>'
+        _combined_html += (
+            f'<div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">'
+            f'<span class="multi-label">🧮 Awards by ETF:</span>'
+            f'{"".join(_etf_bar_parts)}'
+            f'</div></div>'
+        )
+        st.markdown(_combined_html, unsafe_allow_html=True)
 
         # Render as a two-column paired table
         pairs = []
@@ -3011,9 +3053,22 @@ with tab_dashboard:
             "amber": ("rgba(215,168,58,0.15)", "rgba(215,168,58,0.06)", "rgba(215,168,58,0.12)"),
         }
 
+        def _color_holder_tickers(holder):
+            """Escape holder string and color any known tickers by ETF, and ETF codes themselves."""
+            escaped = html_mod.escape(holder)
+            for t in sorted(ETF_MAP.keys(), key=len, reverse=True):
+                clr = _ETF_CLR.get(ETF_MAP.get(t, ""), "")
+                if clr and t in escaped:
+                    escaped = escaped.replace(t, f'<span style="color:{clr};font-weight:700;">{t}</span>')
+            for etf_code, clr in _ETF_CLR.items():
+                if etf_code in escaped and f';">{etf_code}</span>' not in escaped:
+                    escaped = escaped.replace(etf_code, f'<span style="color:{clr};font-weight:700;">{etf_code}</span>')
+            return escaped
+
         def _badge_cell(icon, name, holder, desc):
             tone = _BADGE_TONES.get(name, "green")
             bg_from, bg_to, shadow_color = _TONE_STYLES[tone]
+            holder_html = _color_holder_tickers(holder)
             return (
                 f'<td style="padding:0.85rem 1.2rem;vertical-align:middle;transition:background 0.15s;" '
                 f'onmouseover="this.style.background=\'rgba(14,95,58,0.06)\'" '
@@ -3026,7 +3081,7 @@ with tab_dashboard:
                 f'<span style="font-size:1.5rem;line-height:1;">{icon}</span></div>'
                 f'<div>'
                 f'<div style="font-weight:800;font-size:0.82rem;color:#102018;letter-spacing:0.02em;">{html_mod.escape(name)}</div>'
-                f'<div style="font-size:0.78rem;color:#2d4a3a;margin-top:0.1rem;">{html_mod.escape(holder)}</div>'
+                f'<div style="font-size:0.78rem;color:#2d4a3a;margin-top:0.1rem;">{holder_html}</div>'
                 f'<div style="font-size:0.62rem;color:#5d6f65;opacity:0.8;margin-top:0.1rem;">{html_mod.escape(desc)}</div>'
                 f'</div></div></td>'
             )
@@ -3146,14 +3201,14 @@ with tab_dashboard:
             bench_ret = sorted_rets.iloc[-1]
 
             mvp_roasts = [
-                f"<b>{html_mod.escape(mvp)}</b> is up {mvp_ret:+.2f}% and won't shut up about it. We get it, you're winning.",
-                f"<b>{html_mod.escape(mvp)}</b> at {mvp_ret:+.2f}%? Enjoy it while it lasts. The market humbles everyone.",
-                f"<b>{html_mod.escape(mvp)}</b> is carrying this entire draft at {mvp_ret:+.2f}%. The rest of you are just background noise.",
+                f"{_etf_colored(mvp)} is up {mvp_ret:+.2f}% and won't shut up about it. We get it, you're winning.",
+                f"{_etf_colored(mvp)} at {mvp_ret:+.2f}%? Enjoy it while it lasts. The market humbles everyone.",
+                f"{_etf_colored(mvp)} is carrying this entire draft at {mvp_ret:+.2f}%. The rest of you are just background noise.",
             ]
             bench_roasts = [
-                f"<b>{html_mod.escape(bench)}</b> at {bench_ret:+.2f}%. If this were a group project, you'd be the one who didn't show up.",
-                f"<b>{html_mod.escape(bench)}</b> is at {bench_ret:+.2f}%. Even a random number generator would do better.",
-                f"<b>{html_mod.escape(bench)}</b> at {bench_ret:+.2f}%. At this rate, you could lose money slower by literally burning it.",
+                f"{_etf_colored(bench)} at {bench_ret:+.2f}%. If this were a group project, you'd be the one who didn't show up.",
+                f"{_etf_colored(bench)} is at {bench_ret:+.2f}%. Even a random number generator would do better.",
+                f"{_etf_colored(bench)} at {bench_ret:+.2f}%. At this rate, you could lose money slower by literally burning it.",
             ]
             day_seed = int(hashlib.md5(datetime.date.today().isoformat().encode()).hexdigest(), 16)
             roasts.append(f"\U0001f451 {mvp_roasts[day_seed % len(mvp_roasts)]}")
@@ -3163,20 +3218,20 @@ with tab_dashboard:
                 bd = superlatives["best_day"]
                 wd = superlatives["worst_day"]
                 if bd["ticker"] == wd["ticker"]:
-                    roasts.append(f"\U0001f3a2 <b>{html_mod.escape(bd['ticker'])}</b> gained {bd['change']:+.2f}% and lost {wd['change']:+.2f}% in single days. This stock needs therapy.")
+                    roasts.append(f"\U0001f3a2 {_etf_colored(bd['ticker'])} gained {bd['change']:+.2f}% and lost {wd['change']:+.2f}% in single days. This stock needs therapy.")
                 else:
-                    roasts.append(f"\U0001f3a2 <b>{html_mod.escape(wd['ticker'])}</b> nosedived {wd['change']:+.2f}% in one day. That's not investing, that's bungee jumping without the cord.")
+                    roasts.append(f"\U0001f3a2 {_etf_colored(wd['ticker'])} nosedived {wd['change']:+.2f}% in one day. That's not investing, that's bungee jumping without the cord.")
 
             mc = superlatives.get("middle")
             if mc and mc["ticker"]:
-                roasts.append(f"\U0001fae5 <b>{html_mod.escape(mc['ticker'])}</b> returned {mc['return']:+.2f}%. Absolute NPC energy. Doing nothing and hoping nobody notices.")
+                roasts.append(f"\U0001fae5 {_etf_colored(mc['ticker'])} returned {mc['return']:+.2f}%. Absolute NPC energy. Doing nothing and hoping nobody notices.")
 
             cb = superlatives.get("comeback")
             if cb and cb["ticker"] and cb["low"] < -3:
-                roasts.append(f"\U0001f9d7 <b>{html_mod.escape(cb['ticker'])}</b> dropped to {cb['low']:+.2f}% and somehow clawed back. Plot armor is real.")
+                roasts.append(f"\U0001f9d7 {_etf_colored(cb['ticker'])} dropped to {cb['low']:+.2f}% and somehow clawed back. Plot armor is real.")
 
             bottom3 = sorted_rets.tail(3)
-            tickers_str = ", ".join(f"<b>{html_mod.escape(t)}</b>" for t in bottom3.index)
+            tickers_str = ", ".join(_etf_colored(t) for t in bottom3.index)
             bottom3_roasts = [
                 f"\U0001f6bd {tickers_str} \u2014 the bottom 3. Combined return: {bottom3.sum():+.2f}%. A dumpster fire would've outperformed.",
                 f"\U0001f6bd {tickers_str} sitting at the bottom with {bottom3.sum():+.2f}% combined. If losing money was a sport, you'd be olympians.",
@@ -3654,7 +3709,7 @@ with tab_dashboard:
                 f'<div style="display:flex;align-items:center;gap:0.8rem;padding:0.7rem 0.9rem;background:rgba({accent_color},0.06);border-radius:10px;margin-bottom:0.5rem;">'
                 f'<span style="font-size:1.2rem;">{icon}</span>'
                 f'<div style="flex:1;">'
-                f'<div style="font-weight:800;font-size:0.9rem;">{html_mod.escape(current_ticker)} <span style="font-weight:400;color:var(--muted);font-size:0.8rem;">{html_mod.escape(current_name)}</span></div>'
+                f'<div style="font-size:0.9rem;">{_etf_colored(current_ticker)} <span style="font-weight:400;color:var(--muted);font-size:0.8rem;">{html_mod.escape(current_name)}</span></div>'
                 f'<div style="font-size:0.7rem;color:var(--muted);line-height:1.5;">Reigning<br>{_reign_start} – {_today_label}<br>{streak} day streak</div></div>'
                 f'<div style="text-align:right;"><div style="font-weight:800;color:{_ret_color};font-size:1.1rem;">{current_ret:+.2f}%</div>'
                 f'<div style="font-size:0.65rem;color:var(--muted);">Current</div></div></div>'
@@ -3676,8 +3731,8 @@ with tab_dashboard:
                 _date_range = f'{_start_d} – {_end_d}' if _start_d != _end_d else _start_d
                 _past += (
                     f'<div style="display:flex;align-items:center;gap:0.8rem;padding:0.4rem 0.9rem;border-left:2px solid var(--border);margin-left:1.2rem;">'
-                    f'<div style="flex:1;font-size:0.82rem;"><b>{html_mod.escape(t)}</b> <span style="color:var(--muted);font-size:0.78rem;">{html_mod.escape(entry["name"])}</span>'
-                    f' <span style="font-size:0.68rem;color:var(--muted);">dethroned by {html_mod.escape(_dethroner)}</span></div>'
+                    f'<div style="flex:1;font-size:0.82rem;">{_etf_colored(t)} <span style="color:var(--muted);font-size:0.78rem;">{html_mod.escape(entry["name"])}</span>'
+                    f' <span style="font-size:0.68rem;color:var(--muted);">dethroned by {_etf_colored(_dethroner)}</span></div>'
                     f'<div style="font-size:0.75rem;color:var(--muted);white-space:nowrap;">{_date_range}</div>'
                     f'<div style="font-weight:600;color:{_rc};font-size:0.82rem;">{_r:+.2f}%</div></div>'
                 )
@@ -3730,21 +3785,18 @@ with tab_dashboard:
         _val_s = 'font-size:1.5rem;font-weight:800;letter-spacing:-0.02em;'
 
         st.markdown(
-            f'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:0.8rem 0 1.2rem;">'
+            f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:0.8rem 0 1.2rem;">'
             f'<div style="{_card_s}">'
             f'<div style="{_lbl_s}">Portfolio Value</div>'
-            f'<div style="{_val_s}">${_port_value:,.2f}</div>'
-            f'<div style="font-size:0.75rem;font-weight:600;color:{_port_pl_color};margin-top:0.2rem;">{_port_ret_sign}{_port_ret:.2f}% from start</div>'
+            f'<div style="{_val_s}color:{_port_pl_color};">${_port_value:,.2f}</div>'
+            f'<div style="font-size:0.75rem;font-weight:600;color:{_port_pl_color};margin-top:0.2rem;">P/L: {"(" if _port_pl < 0 else ""}${abs(_port_pl):,.2f}{")" if _port_pl < 0 else ""}</div>'
+            f'<div style="font-size:0.75rem;font-weight:600;color:{_port_pl_color};margin-top:0.1rem;">P/L %: {_port_ret_sign}{_port_ret:.2f}%</div>'
+            f'<div style="font-size:0.75rem;color:#19a05f;margin-top:0.1rem;">Total Dividends Received: ${_port_divs:,.2f}</div>'
             f'</div>'
             f'<div style="{_card_s}">'
             f'<div style="{_lbl_s}">Total Invested</div>'
             f'<div style="{_val_s}">${_port_total_invested:,.2f}</div>'
             f'<div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;">{len(valid_tickers)} stocks × ${INVESTMENT:.2f}</div>'
-            f'</div>'
-            f'<div style="{_card_s}">'
-            f'<div style="{_lbl_s}">Total P/L</div>'
-            f'<div style="{_val_s}color:{_port_pl_color};">{_port_pl_sign}${abs(_port_pl):,.2f}</div>'
-            f'<div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;">Dividends: ${_port_divs:,.2f}</div>'
             f'</div>'
             f'</div>',
             unsafe_allow_html=True,
@@ -4122,7 +4174,7 @@ with tab_dashboard:
                 f'background:rgba(14,95,58,0.04);border:1px solid var(--border);border-radius:12px;min-width:200px;">'
                 f'<span style="font-size:1.1rem;">📊</span>'
                 f'<div style="flex:1;">'
-                f'<div><span style="font-weight:700;font-size:0.85rem;">{t}</span> '
+                f'<div><span style="font-size:0.85rem;">{_etf_colored(t)}</span> '
                 f'<span style="color:var(--muted);font-size:0.76rem;">{NAME_MAP.get(t, "")}</span></div>'
                 f'<div style="color:var(--muted);font-size:0.72rem;">Earnings{_eps_note}</div>'
                 f'</div>'
