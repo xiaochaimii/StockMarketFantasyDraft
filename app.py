@@ -4192,8 +4192,11 @@ with tab_dashboard:
                     worst_etf = ETF_MAP.get(worst_t, "")
                     best_etf_em = {"UNCL": "\U0001f468\u200d\U0001f9b3", "ANTY": "\U0001f469\U0001f3fb", "KIDZ": "\U0001f476\U0001f3fb"}.get(best_etf, "")
                     worst_etf_em = {"UNCL": "\U0001f468\u200d\U0001f9b3", "ANTY": "\U0001f469\U0001f3fb", "KIDZ": "\U0001f476\U0001f3fb"}.get(worst_etf, "")
-                    best_html = f'{best_etf_em} <b>{html_mod.escape(best_t)}</b> <span style="color:{best_color};font-weight:700;">{best_ret:+.2f}%</span>'
-                    worst_html = f'{worst_etf_em} <b>{html_mod.escape(worst_t)}</b> <span style="color:{worst_color};font-weight:700;">{worst_ret:+.2f}%</span>'
+                    _etf_clr_bw = {"ANTY": "#a855f7", "UNCL": "#3b82f6", "KIDZ": "#eab308"}
+                    best_ticker_clr = _etf_clr_bw.get(best_etf, "#5d6f65")
+                    worst_ticker_clr = _etf_clr_bw.get(worst_etf, "#5d6f65")
+                    best_html = f'{best_etf_em} <b style="color:{best_ticker_clr};">{html_mod.escape(best_t)}</b> <span style="color:{best_color};font-weight:700;">{best_ret:+.2f}%</span>'
+                    worst_html = f'{worst_etf_em} <b style="color:{worst_ticker_clr};">{html_mod.escape(worst_t)}</b> <span style="color:{worst_color};font-weight:700;">{worst_ret:+.2f}%</span>'
                 else:
                     best_html = "—"
                     worst_html = "—"
