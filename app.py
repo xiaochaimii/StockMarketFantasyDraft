@@ -1579,18 +1579,25 @@ def fetch_earnings(tickers_tuple):
     return dict(results)
 
 
-def compute_throne_history(returns, valid_tickers, name_map, dividends=None, start_prices=None):
-    """Compute MVP/Benchwarmer streak counts and transition history."""
-    daily_returns = returns[valid_tickers].copy()
-    # Add dividend return to get total return per ticker
+def compute_throne_history(returns, valid_tickers, name_map, dividends=None, start_prices=None, investment=10.0):
+    """Compute MVP/Benchwarmer streak counts and transition history using total return (price + dividends)."""
+    # Compute total return for each ticker on each day, matching final_returns formula exactly:
+    # total_return = ((investment / start_price * close_price + investment / start_price * dividend) / investment - 1) * 100
+    # Which simplifies to: (close/start - 1)*100 + (dividend/start)*100 = price_return + div_return
+    # returns already contains (close/start - 1)*100, so just add div_return
+    cum_returns = returns[valid_tickers].copy()
     if dividends and start_prices is not None:
         for t in valid_tickers:
-            div_ret = (dividends.get(t, 0.0) / start_prices[t]) * 100 if start_prices[t] else 0
-            daily_returns[t] = daily_returns[t] + div_ret
-    if len(daily_returns) > 1:
-        daily_returns = daily_returns.iloc[1:]
-    mvp_series = daily_returns.idxmax(axis=1)
-    bench_series = daily_returns.idxmin(axis=1)
+            if start_prices[t] and start_prices[t] != 0:
+                div_ret = (dividends.get(t, 0.0) / start_prices[t]) * 100
+                cum_returns[t] = cum_returns[t] + div_ret
+    # Skip first row (day 0 = all zeros + div_ret, not meaningful)
+    if len(cum_returns) > 1:
+        cum_returns = cum_returns.iloc[1:]
+
+    # Determine #1 (MVP) and last place (benchwarmer) each day by total return
+    mvp_series = cum_returns.idxmax(axis=1)
+    bench_series = cum_returns.idxmin(axis=1)
 
     def _streak_and_history(series):
         dates = series.index.tolist()
@@ -1608,7 +1615,7 @@ def compute_throne_history(returns, valid_tickers, name_map, dividends=None, sta
         prev_holder = None
         for date, holder in zip(dates, holders):
             if holder != prev_holder:
-                ret = daily_returns.loc[date, holder]
+                ret = cum_returns.loc[date, holder]
                 history.append({
                     "date": date,
                     "ticker": holder,
@@ -2805,7 +2812,7 @@ with tab_dashboard:
         st.markdown(
             f'<div style="margin:0.8rem 0 0.5rem;font-size:1.1rem;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:0.5rem;">'
             f'<span style="font-size:1.3rem;">⚔️</span> ETF Breakdown</div>'
-            f'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:0.8rem;">'
+            f'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-bottom:0.8rem;">'
             f'{_etf_cards_top}</div>',
             unsafe_allow_html=True,
         )
@@ -3636,13 +3643,11 @@ with tab_dashboard:
         st.plotly_chart(fig_bottom, use_container_width=True, config=chart_config)
 
         # --- Throne History (dark timeline style) ---
-        def _render_throne(history, icon, title, subtitle, accent_color, current_ticker, current_name, current_ret, streak):
+        def _render_throne(history, icon, title, accent_color, current_ticker, current_name, current_ret, streak):
             _ret_color = "#19a05f" if current_ret >= 0 else "#d14a34"
             _header = (
                 f'<div style="background:var(--panel-strong);border:1px solid var(--border);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1rem;box-shadow:0 4px 12px rgba(82,58,32,0.06);">'
-                f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;">'
-                f'<div style="font-weight:800;font-size:0.95rem;">{icon} {title}</div>'
-                f'<div style="font-size:0.72rem;color:var(--muted);">{subtitle}</div></div>'
+                f'<div style="font-weight:800;font-size:0.95rem;margin-bottom:0.8rem;">{icon} {title}</div>'
                 # Current holder
                 f'<div style="display:flex;align-items:center;gap:0.8rem;padding:0.7rem 0.9rem;background:rgba({accent_color},0.06);border-radius:10px;margin-bottom:0.5rem;">'
                 f'<span style="font-size:1.2rem;">{icon}</span>'
@@ -3652,8 +3657,9 @@ with tab_dashboard:
                 f'<div style="text-align:right;"><div style="font-weight:800;color:{_ret_color};font-size:1.1rem;">{current_ret:+.2f}%</div>'
                 f'<div style="font-size:0.65rem;color:var(--muted);">Current</div></div></div>'
             )
-            # Past holders
+            # Past holders with dethronement info
             _past = ''
+            prev_holder = current_ticker
             seen = set()
             for entry in history:
                 t = entry["ticker"]
@@ -3663,29 +3669,31 @@ with tab_dashboard:
                 _r = entry["return_pct"]
                 _rc = "#19a05f" if _r >= 0 else "#d14a34"
                 _d = entry["date"].strftime("%b %d")
+                _displaced = f' <span style="font-size:0.68rem;color:var(--muted);">dethroned by {html_mod.escape(prev_holder)}</span>' if prev_holder != t else ''
                 _past += (
                     f'<div style="display:flex;align-items:center;gap:0.8rem;padding:0.4rem 0.9rem;border-left:2px solid var(--border);margin-left:1.2rem;">'
-                    f'<div style="flex:1;font-size:0.82rem;"><b>{html_mod.escape(t)}</b> <span style="color:var(--muted);font-size:0.78rem;">{html_mod.escape(entry["name"])}</span></div>'
+                    f'<div style="flex:1;font-size:0.82rem;"><b>{html_mod.escape(t)}</b> <span style="color:var(--muted);font-size:0.78rem;">{html_mod.escape(entry["name"])}</span>{_displaced}</div>'
                     f'<div style="font-size:0.75rem;color:var(--muted);">{_d}</div>'
                     f'<div style="font-weight:600;color:{_rc};font-size:0.82rem;">{_r:+.2f}%</div></div>'
                 )
+                prev_holder = t
             return _header + _past + '</div>'
 
-        _mvp_t = throne['mvp_history'][-1]['ticker'] if throne['mvp_history'] else best_ticker
+        _mvp_t = throne['mvp_history'][0]['ticker'] if throne['mvp_history'] else best_ticker
         _mvp_n = NAME_MAP.get(_mvp_t, '')
         _mvp_r = final_returns.get(_mvp_t, 0)
-        _bench_t = throne['bench_history'][-1]['ticker'] if throne['bench_history'] else worst_ticker
+        _bench_t = throne['bench_history'][0]['ticker'] if throne['bench_history'] else worst_ticker
         _bench_n = NAME_MAP.get(_bench_t, '')
         _bench_r = final_returns.get(_bench_t, 0)
 
         throne_cols = st.columns(2)
         throne_cols[0].markdown(
-            _render_throne(throne['mvp_history'], '👑', 'MVP Throne', 'Weekly top performers',
+            _render_throne(throne['mvp_history'], '👑', 'MVP Throne',
                                '34,197,94', _mvp_t, _mvp_n, _mvp_r, throne['mvp_streak']),
             unsafe_allow_html=True,
         )
         throne_cols[1].markdown(
-            _render_throne(throne['bench_history'], '💩', 'Benchwarmer Throne', 'Weekly bottom performers',
+            _render_throne(throne['bench_history'], '💩', 'Benchwarmer Throne',
                                '239,68,68', _bench_t, _bench_n, _bench_r, throne['bench_streak']),
             unsafe_allow_html=True,
         )
