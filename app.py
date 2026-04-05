@@ -4118,7 +4118,7 @@ with tab_dashboard:
             _day_label = ed.strftime("%a %b %d")
             _eps_note = f' · Est. ${eps_est:.2f}' if eps_est is not None else ''
             _events_items.append(
-                f'<div style="flex:0 0 auto;display:flex;align-items:center;gap:0.7rem;padding:0.6rem 1rem;'
+                f'<div style="flex:1 1 auto;display:flex;align-items:center;gap:0.7rem;padding:0.6rem 1rem;'
                 f'background:rgba(14,95,58,0.04);border:1px solid var(--border);border-radius:12px;min-width:200px;">'
                 f'<span style="font-size:1.1rem;">📊</span>'
                 f'<div style="flex:1;">'
@@ -4146,7 +4146,7 @@ with tab_dashboard:
             f'</div>'
             f'<span style="font-size:0.7rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:999px;background:rgba(14,95,58,0.08);color:var(--accent);">{_earnings_count} earnings</span>'
             f'</div>'
-            f'<div style="display:flex;gap:0.7rem;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:0.3rem;">'
+            f'<div style="display:flex;gap:0.7rem;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:0.3rem;flex-wrap:wrap;">'
             f'{_events_html}'
             f'</div>'
             f'</div></div>',
@@ -4220,43 +4220,27 @@ with tab_dashboard:
                     _top_etf_html = "\u2014"
 
                 _td = 'style="padding:8px 8px;border-bottom:1px solid rgba(18,51,36,0.06);font-size:0.82rem;"'
+                _etf_clr = {"ANTY": "#a855f7", "UNCL": "#3b82f6", "KIDZ": "#eab308"}
+                _colored_tickers = ", ".join(
+                    f'<span style="color:{_etf_clr.get(ETF_MAP.get(t, ""), "#5d6f65")};font-weight:600;">{html_mod.escape(t)}</span>'
+                    for t in tickers
+                )
                 _sector_rows += (
                     f'<tr>'
                     f'<td style="font-weight:700;white-space:nowrap;padding:8px 8px;border-bottom:1px solid rgba(18,51,36,0.06);font-size:0.82rem;">{html_mod.escape(sec)}</td>'
                     f'<td {_td} style="text-align:center;">{len(tickers)}</td>'
                     f'<td {_td}>{_avg_html}</td>'
-                    f'<td {_td} style="color:var(--muted);white-space:normal;">{", ".join(tickers)}</td>'
+                    f'<td {_td} style="white-space:normal;">{_colored_tickers}</td>'
                     f'<td {_td}>{best_html}</td>'
                     f'<td {_td}>{worst_html}</td>'
                     f'<td {_td}>{_top_etf_html}</td>'
                     f'</tr>'
                 )
-        # Build holdings HTML first
-        _etf_emoji_h = {"UNCL": "👨‍🦳", "ANTY": "👩🏻", "KIDZ": "👶🏻"}
-        _etf_colors_h = {"ANTY": "#a855f7", "UNCL": "#3b82f6", "KIDZ": "#eab308"}
-        _holdings_html = ''
-        for etf_code in ["ANTY", "UNCL", "KIDZ"]:
-            _etf_tickers = sorted([t for t in valid_tickers if ETF_MAP.get(t) == etf_code])
-            _etf_color = _etf_colors_h[etf_code]
-            _badge_bg = f'rgba({int(_etf_color[1:3],16)},{int(_etf_color[3:5],16)},{int(_etf_color[5:7],16)},0.12)'
-            _badges = ' '.join(
-                f'<span style="display:inline-block;padding:0.1rem 0.4rem;border-radius:4px;font-size:0.7rem;font-weight:700;'
-                f'background:{_badge_bg};color:{_etf_color};margin:0.1rem;">{t}</span>'
-                for t in _etf_tickers
-            )
-            _holdings_html += (
-                f'<div>'
-                f'<div style="font-weight:700;font-size:0.82rem;margin-bottom:0.4rem;color:{_etf_color};">'
-                f'{_etf_emoji_h[etf_code]} {etf_code} — {len(_etf_tickers)} stocks</div>'
-                f'<div style="display:flex;flex-wrap:wrap;gap:0.15rem;">{_badges}</div>'
-                f'</div>'
-            )
-
         _th = 'style="text-align:left;padding:10px 8px;background:linear-gradient(90deg,#0d2f20,#13492f);color:#f4f0e3;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;font-family:Space Grotesk,sans-serif;white-space:normal;line-height:1.3;"'
         st.markdown(
             f'<div style="margin-top:0.8rem;overflow-x:auto;-webkit-overflow-scrolling:touch;">'
             f'<div style="background:var(--panel-strong);border:1px solid var(--border);border-radius:14px;overflow:hidden;">'
-            f'<table style="width:100%;border-collapse:separate;border-spacing:0;font-family:Space Grotesk,sans-serif;font-size:0.82rem;">'
+            f'<table style="width:100%;min-width:900px;border-collapse:separate;border-spacing:0;font-family:Space Grotesk,sans-serif;font-size:0.82rem;">'
             f'<tr>'
             f'<th {_th}>Sector</th><th {_th}>#</th><th {_th}>Avg Total Return ({start_date.strftime("%m/%d")} - {end_date.strftime("%m/%d")})</th>'
             f'<th {_th}>Stocks</th><th {_th}>Best</th><th {_th}>Worst</th>'
@@ -4268,12 +4252,7 @@ with tab_dashboard:
             f'<td style="padding:8px 8px;text-align:center;font-size:0.82rem;">{_total_stock_count}</td>'
             f'<td></td><td></td><td></td><td></td><td></td>'
             f'</tr>'
-            f'</table>'
-            f'<div style="padding:1rem 1rem 0.8rem;border-top:1px solid rgba(18,51,36,0.08);">'
-            f'<div style="font-weight:800;font-size:0.85rem;margin-bottom:0.6rem;">📋 Holdings by ETF</div>'
-            f'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">'
-            f'{_holdings_html}'
-            f'</div></div></div></div>',
+            f'</table></div></div>',
             unsafe_allow_html=True,
         )
 
