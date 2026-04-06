@@ -2494,7 +2494,7 @@ with tab_dashboard:
             _nh_days = (_nh_date - _today_d).days
             _hol_html = f'\U0001f4c5 Next market holiday: <b>{_nh_name}</b> in {_nh_days}d'
 
-        _div_html = '<span style="width:1px;height:12px;background:rgba(18,51,36,0.1);display:inline-block;"></span>'
+        _div_html = '<span class="status-divider" style="width:1px;height:12px;background:rgba(18,51,36,0.1);display:inline-block;"></span>'
 
         if is_market_open():
             market_close_et = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
@@ -2504,8 +2504,9 @@ with tab_dashboard:
             _status_bar = (
                 '<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">'
                 '<style>*{margin:0;padding:0;box-sizing:border-box;font-family:"Space Grotesk",sans-serif;}'
-                '@keyframes glow{0%,100%{box-shadow:0 0 4px #4ade80}50%{box-shadow:0 0 10px #4ade80}}</style>'
-                '<div style="display:inline-flex;align-items:center;gap:0.45rem;background:rgba(255,255,255,0.7);'
+                '@keyframes glow{0%,100%{box-shadow:0 0 4px #4ade80}50%{box-shadow:0 0 10px #4ade80}}'
+                '@media(max-width:600px){.status-divider{display:none !important;}}</style>'
+                '<div style="display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap;background:rgba(255,255,255,0.7);'
                 'backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(25,160,95,0.15);'
                 'border-radius:14px;padding:0.4rem 0.85rem;box-shadow:0 2px 12px rgba(0,0,0,0.04);">'
                 '<div style="display:flex;align-items:center;gap:0.3rem;background:rgba(25,160,95,0.1);padding:0.18rem 0.55rem;border-radius:8px;">'
@@ -2541,8 +2542,9 @@ with tab_dashboard:
             next_open_label = next_open.strftime("%a %b %d, %I:%M %p ET")
             _status_bar = (
                 '<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">'
-                '<style>*{margin:0;padding:0;box-sizing:border-box;font-family:"Space Grotesk",sans-serif;}</style>'
-                '<div style="display:inline-flex;align-items:center;gap:0.45rem;background:rgba(255,255,255,0.7);'
+                '<style>*{margin:0;padding:0;box-sizing:border-box;font-family:"Space Grotesk",sans-serif;}'
+                '@media(max-width:600px){.status-divider{display:none !important;}}</style>'
+                '<div style="display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap;background:rgba(255,255,255,0.7);'
                 'backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(93,111,101,0.1);'
                 'border-radius:14px;padding:0.4rem 0.85rem;box-shadow:0 2px 12px rgba(0,0,0,0.04);">'
                 '<div style="display:flex;align-items:center;gap:0.3rem;background:rgba(93,111,101,0.08);padding:0.18rem 0.55rem;border-radius:8px;">'
