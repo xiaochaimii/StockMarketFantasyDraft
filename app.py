@@ -2636,42 +2636,100 @@ with tab_dashboard:
         # --- Live status indicator with countdown ---
         now_et = datetime.datetime.now(ZoneInfo("America/New_York"))
         live_timestamp = now_et.strftime("%I:%M:%S %p ET")
+
+        # Compute next market holiday (shared by both open/closed states)
+        _holiday_names = {}
+        for _hy in (now_et.year, now_et.year + 1):
+            from dateutil.easter import easter as _easter_fn
+            _hmap = {
+                _nth_weekday(_hy, 1, 0, 3): "MLK Day",
+                _nth_weekday(_hy, 2, 0, 3): "Presidents\u2019 Day",
+                _easter_fn(_hy) - datetime.timedelta(days=2): "Good Friday",
+                _last_weekday(_hy, 5, 0): "Memorial Day",
+                _nth_weekday(_hy, 9, 0, 1): "Labor Day",
+                _nth_weekday(_hy, 11, 3, 4): "Thanksgiving",
+            }
+            _jt = datetime.date(_hy, 6, 19)
+            if _jt.weekday() == 6: _jt = datetime.date(_hy, 6, 20)
+            elif _jt.weekday() == 5: _jt = datetime.date(_hy, 6, 18)
+            _hmap[_jt] = "Juneteenth"
+            _j4 = datetime.date(_hy, 7, 4)
+            if _j4.weekday() == 6: _j4 = datetime.date(_hy, 7, 5)
+            elif _j4.weekday() == 5: _j4 = datetime.date(_hy, 7, 3)
+            _hmap[_j4] = "Independence Day"
+            _xm = datetime.date(_hy, 12, 25)
+            if _xm.weekday() == 6: _xm = datetime.date(_hy, 12, 26)
+            elif _xm.weekday() == 5: _xm = datetime.date(_hy, 12, 24)
+            _hmap[_xm] = "Christmas"
+            _ny = datetime.date(_hy, 1, 1)
+            if _ny.weekday() == 6: _ny = datetime.date(_hy, 1, 2)
+            elif _ny.weekday() != 5: pass
+            else: _ny = None
+            if _ny: _hmap[_ny] = "New Year\u2019s Day"
+            _holiday_names.update(_hmap)
+        _today_d = now_et.date()
+        _next_holidays = sorted([(d, n) for d, n in _holiday_names.items() if d > _today_d])
+        _holiday_html = ""
+        if _next_holidays:
+            _nh_date, _nh_name = _next_holidays[0]
+            _nh_label = _nh_date.strftime("%a %b %d")
+            _nh_days = (_nh_date - _today_d).days
+            _holiday_html = (
+                f'<div style="display:flex;align-items:center;gap:0.35rem;">'
+                f'<span style="font-size:0.7rem;">\U0001f4c5</span>'
+                f'<span>Next market holiday: <b>{_nh_name}</b> &middot; {_nh_label} ({_nh_days}d)</span>'
+                f'</div>'
+            )
+
+        # Holiday section for the status bar
+        _div = '<span style="width:1px;height:14px;background:rgba(18,51,36,0.1);display:inline-block;vertical-align:middle;"></span>'
+        _hol_span = ''
+        if _holiday_html:
+            _nh_date, _nh_name = _next_holidays[0]
+            _nh_days = (_nh_date - _today_d).days
+            _hol_span = f'{_div} <span style="font-size:0.68rem;color:#aaa;">\U0001f4c5 <b style="color:#5d6f65;">{_nh_name}</b> in {_nh_days}d</span>'
+
         if is_market_open():
             # Countdown to market close (4:00 PM ET)
             market_close_et = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
             secs_to_close = max(0, int((market_close_et - now_et).total_seconds()))
-            # Compute next data refresh countdown (cache TTL = 1h)
             _secs_into_hour = now_et.minute * 60 + now_et.second
             _secs_to_refresh = max(0, 3600 - _secs_into_hour)
-            # Single iframe with both countdowns
+            # Single iframe with close + refresh countdowns
             _live_iframe = (
                 '<iframe srcdoc="'
                 '<body style=&quot;margin:0;padding:0;overflow:hidden;background:transparent;&quot;>'
                 '<span id=&quot;w&quot; style=&quot;font-family:Space Grotesk,-apple-system,BlinkMacSystemFont,sans-serif;'
-                'font-size:13px;color:#888;&quot;></span>'
+                'font-size:11.5px;color:#5d6f65;&quot;></span>'
                 f'<script>var el=document.getElementById(&quot;w&quot;),cs={secs_to_close},rs={_secs_to_refresh};'
                 'function fmt(s){var h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;'
                 'return h+&quot;h &quot;+(m&lt;10?&quot;0&quot;:&quot;&quot;)+m+&quot;m &quot;+(sc&lt;10?&quot;0&quot;:&quot;&quot;)+sc+&quot;s&quot;;}'
                 'function u(){cs--;rs--;'
                 'var ct=cs&gt;0?&quot;closes in &quot;+fmt(cs):&quot;Market closed&quot;;'
                 'var rt=rs&gt;0?&quot;refreshes in &quot;+Math.floor(rs/60)+&quot;m &quot;+(rs%60&lt;10?&quot;0&quot;:&quot;&quot;)+(rs%60)+&quot;s&quot;:&quot;refreshing\u2026&quot;;'
-                'el.innerHTML=ct+&quot; \u00b7 &quot;+rt;'
+                'el.textContent=ct+&quot; \u00b7 &quot;+rt;'
                 'if(rs&lt;=0)setTimeout(function(){try{window.parent.location.reload();}catch(e){}},2000);}'
                 'u();setInterval(u,1000);'
                 '</script></body>'
-                '" style="border:none;width:420px;height:18px;vertical-align:text-bottom;display:inline-block;'
+                '" style="border:none;width:380px;height:16px;vertical-align:middle;display:inline-block;'
                 'overflow:hidden;background:transparent;" scrolling="no"></iframe>'
             )
-            st.markdown(
-                f'<div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0;">'
-                f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#19a05f;'
-                f'box-shadow:0 0 6px #19a05f;"></span>'
-                f'<span style="font-size:13px;color:#888;line-height:18px;">'
-                f'<strong style="color:#19a05f;">LIVE</strong> &middot; {live_timestamp}'
-                f' &middot; {_live_iframe}'
-                f'</span></div>',
-                unsafe_allow_html=True,
+            _status_html = (
+                '<div style="display:inline-flex;align-items:center;gap:0.6rem;background:rgba(255,255,255,0.7);'
+                'backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(25,160,95,0.15);'
+                'border-radius:14px;padding:0.45rem 0.9rem;box-shadow:0 2px 12px rgba(0,0,0,0.04);margin-bottom:0.6rem;flex-wrap:wrap;">'
+                '<div style="display:flex;align-items:center;gap:0.3rem;background:rgba(25,160,95,0.1);padding:0.18rem 0.55rem;border-radius:8px;">'
+                '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#4ade80;animation:glow 2s infinite;"></span>'
+                '<span style="font-size:0.72rem;font-weight:700;color:#19a05f;">LIVE</span>'
+                '</div>'
+                f'<span style="font-size:0.75rem;color:#5d6f65;">{live_timestamp}</span>'
+                f'{_div}'
+                f'{_live_iframe}'
+                f'{_hol_span}'
+                '</div>'
+                '<style>@keyframes glow{0%,100%{box-shadow:0 0 4px #4ade80}50%{box-shadow:0 0 10px #4ade80}}</style>'
             )
+            st.markdown(_status_html, unsafe_allow_html=True)
         else:
             # Countdown to next market open (9:30 AM ET next trading day)
             next_open = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
@@ -2685,7 +2743,7 @@ with tab_dashboard:
                 '<iframe srcdoc="'
                 '<body style=&quot;margin:0;padding:0;overflow:hidden;background:transparent;&quot;>'
                 '<span id=&quot;c&quot; style=&quot;font-family:Space Grotesk,-apple-system,BlinkMacSystemFont,sans-serif;'
-                f'font-size:13px;color:#5d6f65;&quot;></span>'
+                f'font-size:11.5px;color:#5d6f65;&quot;></span>'
                 f'<script>var e=document.getElementById(&quot;c&quot;),s={secs_to_open};'
                 'function u(){if(s&lt;=0){e.textContent=&quot;Market opening...&quot;;return;}'
                 'var d=Math.floor(s/86400),h=Math.floor((s%86400)/3600),m=Math.floor((s%3600)/60),sec=s%60;'
@@ -2693,20 +2751,24 @@ with tab_dashboard:
                 'e.textContent=t;s--;}'
                 'u();setInterval(u,1000);'
                 '</script></body>'
-                '" style="border:none;width:180px;height:18px;vertical-align:text-bottom;display:inline-block;'
+                '" style="border:none;width:160px;height:16px;vertical-align:middle;display:inline-block;'
                 'overflow:hidden;background:transparent;" scrolling="no"></iframe>'
             )
-            st.markdown(
-                f'<div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0;">'
-                f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--muted);"></span>'
-                f'<span style="font-size:0.78rem;color:var(--muted);">'
-                f'Market: <strong>CLOSED</strong> &middot; {live_timestamp}'
-                f'</span></div>'
-                f'<div style="font-size:0.75rem;color:var(--muted);margin:0.15rem 0 0.5rem 0;">'
-                f'\U0001f514 Opens {next_open_label} &middot; {countdown_iframe}'
-                f'</div>',
-                unsafe_allow_html=True,
+            _status_html = (
+                '<div style="display:inline-flex;align-items:center;gap:0.6rem;background:rgba(255,255,255,0.7);'
+                'backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(93,111,101,0.1);'
+                'border-radius:14px;padding:0.45rem 0.9rem;box-shadow:0 2px 12px rgba(0,0,0,0.04);margin-bottom:0.6rem;flex-wrap:wrap;">'
+                '<div style="display:flex;align-items:center;gap:0.3rem;background:rgba(93,111,101,0.08);padding:0.18rem 0.55rem;border-radius:8px;">'
+                '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#aaa;"></span>'
+                '<span style="font-size:0.72rem;font-weight:700;color:#888;">CLOSED</span>'
+                '</div>'
+                f'<span style="font-size:0.75rem;color:#5d6f65;">{live_timestamp}</span>'
+                f'{_div}'
+                f'<span style="font-size:0.72rem;color:#5d6f65;">\U0001f514 Opens {next_open_label} &middot; {countdown_iframe}</span>'
+                f'{_hol_span}'
+                '</div>'
             )
+            st.markdown(_status_html, unsafe_allow_html=True)
         # --- Generate Trash Talk & Achievements ---
         trash_talk_lines = generate_trash_talk(throne, superlatives, final_returns, NAME_MAP, ETF_MAP, returns, valid_tickers)
         achievements = compute_achievements(returns, valid_tickers, NAME_MAP, dividends, throne, final_returns, start_prices, INVESTMENT)
