@@ -2638,7 +2638,7 @@ with tab_dashboard:
             f'<span style="font-size:0.62rem;opacity:0.5;">as of {end_date.strftime("%b %d, %Y")}{" (live)" if is_market_open() else ""}</span>'
             f'</div>'
             f'<div style="font-size:2rem;font-weight:900;letter-spacing:-0.03em;margin:0.2rem 0 0.5rem;">${_port_value:,.2f}</div>'
-            f'<div style="display:flex;gap:1.5rem;font-size:0.78rem;opacity:0.85;">'
+            f'<div style="display:flex;gap:1.5rem;font-size:0.78rem;opacity:0.85;flex-wrap:wrap;">'
             f'<div><div style="font-size:0.6rem;opacity:0.7;text-transform:uppercase;letter-spacing:0.04em;">P/L</div>{"(" if _port_pl < 0 else ""}${abs(_port_pl):,.2f}{")" if _port_pl < 0 else ""}</div>'
             f'<div><div style="font-size:0.6rem;opacity:0.7;text-transform:uppercase;letter-spacing:0.04em;">P/L %</div>{"(" if _port_ret < 0 else ""}{abs(_port_ret):.2f}%{")" if _port_ret < 0 else ""}</div>'
             f'<div><div style="font-size:0.6rem;opacity:0.7;text-transform:uppercase;letter-spacing:0.04em;">Dividends</div>${_port_divs:,.2f}</div>'
@@ -4035,7 +4035,13 @@ with tab_dashboard:
             '.controls-bar .btn-reset { padding:0.3rem 0.6rem;border:1.5px solid rgba(18,51,36,0.12);background:white;color:#5d6f65;'
             '  border-radius:8px;font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0; }'
             '.controls-bar .btn-reset:hover { background:rgba(18,51,36,0.04); }'
-            '@media(max-width:500px){ .controls-bar .vdiv{display:none;} .controls-bar .date-label{display:none;} }'
+            '@media(max-width:600px){'
+            '  .controls-bar{flex-wrap:wrap !important;overflow:visible !important;}'
+            '  .controls-bar .search-wrap{width:100% !important;min-width:100% !important;margin-bottom:0.2rem;}'
+            '  .controls-bar .vdiv{display:none;}'
+            '  .controls-bar .date-group{width:100%;justify-content:space-between;}'
+            '  .controls-bar .date-input{flex:1;min-width:0;}'
+            '}'
             '.lb-search-wrap .search-icon { position:absolute; left:0.7rem; top:50%; transform:translateY(-50%); font-size:0.85rem; color:#5d6f65; pointer-events:none; }'
             '.lb-search-wrap input { width:100%; padding:0.5rem 2.2rem 0.5rem 2.1rem; border:2px solid rgba(18,51,36,0.12); border-radius:12px; font-family:inherit; font-size:0.85rem; font-weight:600; background:white; color:#102018; outline:none; box-sizing:border-box; transition:border-color 0.15s; }'
             '.lb-search-wrap input:focus { border-color:rgba(14,95,58,0.4); }'
@@ -4180,7 +4186,7 @@ with tab_dashboard:
             f'function resetDates(){{window.parent.location.search="?ds={default_start.strftime("%Y-%m-%d")}&de={default_end.strftime("%Y-%m-%d")}";}}'
             '</script>'
         )
-        components.html(_lb_html, height=700, scrolling=False)
+        components.html(_lb_html, height=730, scrolling=False)
         st.markdown(
             '<div style="font-size:0.7rem;color:var(--muted);line-height:1.4;margin-top:-0.3rem;">'
             '<b>Price Return (%)</b> is the percentage change in share price over the period, excluding dividends. '
