@@ -1344,50 +1344,27 @@ roster_search = ""
 
 @st.cache_data(ttl=3600)
 def fetch_returns(tickers, start, end):
-    """Download adjusted prices and compute daily cumulative % return with retry."""
-    import time as _time
-    end_dl = end + datetime.timedelta(days=1)
+    """Download adjusted prices and compute daily cumulative % return."""
+    data = yf.download(
+        tickers,
+        start=start,
+        end=end + datetime.timedelta(days=1),
+        auto_adjust=True,
+        progress=False,
+        threads=True,
+    )
 
-    # Bulk download all tickers
-    data = yf.download(tickers, start=start, end=end_dl, auto_adjust=True, progress=False, threads=True)
-    all_close = None
-    if not data.empty:
-        close = data["Close"]
-        if isinstance(close, pd.Series):
-            close = close.to_frame(name=tickers[0])
-        all_close = close
-
-    # Find missing tickers and retry individually
-    missing = [t for t in tickers if all_close is None or t not in all_close.columns or all_close[t].isna().all()]
-    if missing:
-        _time.sleep(1)
-        from concurrent.futures import ThreadPoolExecutor
-        def _fetch_single(t):
-            for _try in range(2):
-                try:
-                    d = yf.download(t, start=start, end=end_dl, auto_adjust=True, progress=False)
-                    if not d.empty and "Close" in d.columns:
-                        return t, d["Close"]
-                except Exception:
-                    pass
-                _time.sleep(1)
-            return t, None
-        with ThreadPoolExecutor(max_workers=5) as pool:
-            results = list(pool.map(_fetch_single, missing))
-        for t, series in results:
-            if series is not None:
-                if all_close is None:
-                    all_close = series.to_frame(name=t)
-                else:
-                    all_close[t] = series
-
-    if all_close is None or all_close.empty:
+    if data.empty:
         return None, None, None
 
-    all_close = all_close.ffill().bfill()
-    start_prices = all_close.iloc[0]
-    end_prices = all_close.iloc[-1]
-    pct_return = (all_close / start_prices - 1) * 100
+    close = data["Close"]
+    if isinstance(close, pd.Series):
+        close = close.to_frame(name=tickers[0])
+
+    close = close.ffill().bfill()
+    start_prices = close.iloc[0]
+    end_prices = close.iloc[-1]
+    pct_return = (close / start_prices - 1) * 100
 
     return pct_return, start_prices, end_prices
 
@@ -2550,16 +2527,9 @@ with tab_dashboard:
         # Identify valid vs invalid tickers
         valid_tickers = [t for t in TICKERS if t in returns.columns and returns[t].notna().any()]
 
-        # Fetch dividends, signals, and earnings in parallel
-        from concurrent.futures import ThreadPoolExecutor as _TPE
-        _data_futures = {}
-        _data_pool = _TPE(max_workers=3)
-        _data_futures["dividends"] = _data_pool.submit(fetch_dividends, valid_tickers, start_date, end_date)
-        _data_futures["signals"] = _data_pool.submit(compute_signals, valid_tickers, start_date, end_date)
-        _data_futures["earnings"] = _data_pool.submit(fetch_earnings, tuple(valid_tickers))
-
+        # Fetch dividends for valid tickers
         try:
-            dividends = _data_futures["dividends"].result()
+            dividends = fetch_dividends(valid_tickers, start_date, end_date)
         except Exception:
             dividends = {t: 0.0 for t in valid_tickers}
         invalid_tickers = [t for t in TICKERS if t not in valid_tickers]
@@ -2951,11 +2921,8 @@ with tab_dashboard:
                     return b
             return None
 
-        # Fetch earnings data early for Beat Street badges (already started in parallel)
-        try:
-            earnings_data = _data_futures["earnings"].result()
-        except Exception:
-            earnings_data = {}
+        # Fetch earnings data early for Beat Street badges
+        earnings_data = fetch_earnings(tuple(valid_tickers))
 
         # Build badges as opposite pairs
         badges_data = []  # (icon, name, holder, desc)
@@ -3219,11 +3186,7 @@ with tab_dashboard:
         st.markdown(f'<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">{table_html}</div>', unsafe_allow_html=True)
 
         # --- Market Pulse ---
-        # Signals already started in parallel
-        try:
-            stock_signals = _data_futures["signals"].result()
-        except Exception:
-            stock_signals = {}
+        stock_signals = compute_signals(valid_tickers, start_date, end_date)
 
         # Compute signal counts for the bar
         buy_count = sum(1 for s in stock_signals.values() if s["signal"] == "BUY") if stock_signals else 0
