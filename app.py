@@ -1542,47 +1542,63 @@ def fetch_earnings(tickers_tuple):
     """Fetch next earnings date and EPS estimates for tickers via yfinance using threads."""
     from concurrent.futures import ThreadPoolExecutor
     import datetime as _dt
+    import time as _time
+
+    _empty = {"next_date": "", "eps_est": None, "eps_actual": None, "last_earnings_date": "", "last_eps_reported": None, "last_eps_estimate": None}
 
     def _fetch_one(ticker):
-        try:
-            t = yf.Ticker(ticker)
-            cal = t.calendar
-            if cal is not None and isinstance(cal, dict):
-                earnings_dates_list = cal.get("Earnings Date", [])
-                next_date = earnings_dates_list[0].strftime("%b %d") if earnings_dates_list else ""
-                eps_est = cal.get("Earnings Average")
-                info = t.info
-                eps_actual = info.get("trailingEps")
-                # Get most recent quarterly earnings for beat/miss
-                last_earnings_date = ""
-                last_eps_reported = None
-                last_eps_estimate = None
-                try:
-                    eh = t.earnings_history
-                    if eh is not None and len(eh) > 0:
-                        latest = eh.iloc[-1]
-                        last_earnings_date = eh.index[-1].strftime("%b %y")
-                        v = latest.get("epsActual")
-                        if v is not None and str(v) != "nan":
-                            last_eps_reported = round(float(v), 2)
-                        v = latest.get("epsEstimate")
-                        if v is not None and str(v) != "nan":
-                            last_eps_estimate = round(float(v), 2)
-                except Exception:
-                    pass
-                return ticker, {
-                    "next_date": next_date,
-                    "eps_est": round(eps_est, 2) if eps_est else None,
-                    "eps_actual": round(eps_actual, 2) if eps_actual else None,
-                    "last_earnings_date": last_earnings_date,
-                    "last_eps_reported": last_eps_reported,
-                    "last_eps_estimate": last_eps_estimate,
-                }
-        except Exception:
-            pass
-        return ticker, {"next_date": "", "eps_est": None, "eps_actual": None, "last_earnings_date": "", "last_eps_reported": None, "last_eps_estimate": None}
+        for attempt in range(2):
+            try:
+                t = yf.Ticker(ticker)
+                cal = t.calendar
+                # Handle DataFrame format from older yfinance versions
+                if cal is not None and hasattr(cal, 'to_dict') and not isinstance(cal, dict):
+                    try:
+                        cal = cal.to_dict()
+                    except Exception:
+                        cal = {}
+                if cal is not None and isinstance(cal, dict) and cal:
+                    earnings_dates_list = cal.get("Earnings Date", [])
+                    next_date = earnings_dates_list[0].strftime("%b %d") if earnings_dates_list else ""
+                    eps_est = cal.get("Earnings Average")
+                    info = t.info
+                    eps_actual = info.get("trailingEps")
+                    # Get most recent quarterly earnings for beat/miss
+                    last_earnings_date = ""
+                    last_eps_reported = None
+                    last_eps_estimate = None
+                    try:
+                        eh = t.earnings_history
+                        if eh is not None and len(eh) > 0:
+                            latest = eh.iloc[-1]
+                            last_earnings_date = eh.index[-1].strftime("%b %y")
+                            v = latest.get("epsActual")
+                            if v is not None and str(v) != "nan":
+                                last_eps_reported = round(float(v), 2)
+                            v = latest.get("epsEstimate")
+                            if v is not None and str(v) != "nan":
+                                last_eps_estimate = round(float(v), 2)
+                    except Exception:
+                        pass
+                    return ticker, {
+                        "next_date": next_date,
+                        "eps_est": round(eps_est, 2) if eps_est else None,
+                        "eps_actual": round(eps_actual, 2) if eps_actual else None,
+                        "last_earnings_date": last_earnings_date,
+                        "last_eps_reported": last_eps_reported,
+                        "last_eps_estimate": last_eps_estimate,
+                    }
+                else:
+                    # Empty calendar (ETFs, etc.) — no earnings data available
+                    return ticker, dict(_empty)
+            except Exception as e:
+                if attempt == 0:
+                    _time.sleep(0.5)
+                    continue
+                print(f"[fetch_earnings] {ticker} failed after retry: {e}")
+        return ticker, dict(_empty)
 
-    with ThreadPoolExecutor(max_workers=10) as pool:
+    with ThreadPoolExecutor(max_workers=5) as pool:
         results = pool.map(_fetch_one, tickers_tuple)
     return dict(results)
 

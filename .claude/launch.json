@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "streamlit",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd /Users/jinghuang/Desktop/Projects/StockMarketFantasyDraft/.claude/worktrees/goofy-ptolemy && python3 -m streamlit run app.py --server.port $PORT"],
+      "port": 8501,
+      "autoPort": true
+    }
+  ]
+}

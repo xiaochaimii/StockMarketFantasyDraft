@@ -215,6 +215,78 @@
       "confidence": 30,
       "detail": "Avg 5-day momentum: +2.53% across 10 stocks",
       "return_at_prediction": null
+    },
+    {
+      "recorded_date": "2026-04-06",
+      "end_date": "2026-04-06",
+      "title": "Predicted MVP",
+      "ticker": "SNDK",
+      "confidence": 90,
+      "detail": "Strong momentum (+19.64%) + 4/5 green days",
+      "return_at_prediction": null
+    },
+    {
+      "recorded_date": "2026-04-06",
+      "end_date": "2026-04-06",
+      "title": "Predicted Benchwarmer",
+      "ticker": "TPL",
+      "confidence": 90,
+      "detail": "Dropping -12.86% with 2/5 green days",
+      "return_at_prediction": null
+    },
+    {
+      "recorded_date": "2026-04-06",
+      "end_date": "2026-04-06",
+      "title": "Danger Zone",
+      "ticker": "TYGO",
+      "confidence": 75,
+      "detail": "Dropping -10.98% over 5 days with high volatility",
+      "return_at_prediction": null
+    },
+    {
+      "recorded_date": "2026-04-06",
+      "end_date": "2026-04-06",
+      "title": "Breakout Watch",
+      "ticker": "ASTS",
+      "confidence": 70,
+      "detail": "High volatility (\u00b17.79%) with upward momentum",
+      "return_at_prediction": null
+    },
+    {
+      "recorded_date": "2026-04-06",
+      "end_date": "2026-04-06",
+      "title": "Volatility Bomb",
+      "ticker": "ARM",
+      "confidence": 70,
+      "detail": "Avg daily swing of \u00b18.81% \u2014 expect fireworks",
+      "return_at_prediction": null
+    },
+    {
+      "recorded_date": "2026-04-06",
+      "end_date": "2026-04-06",
+      "title": "Throne Challenger",
+      "ticker": "STX",
+      "confidence": 60,
+      "detail": "Most likely to dethrone SNDK next week",
+      "return_at_prediction": null
+    },
+    {
+      "recorded_date": "2026-04-06",
+      "end_date": "2026-04-06",
+      "title": "Head of Household",
+      "ticker": "UNCL",
+      "confidence": 51,
+      "detail": "Avg 5-day momentum: +5.14% across 25 stocks",
+      "return_at_prediction": null
+    },
+    {
+      "recorded_date": "2026-04-06",
+      "end_date": "2026-04-06",
+      "title": "Sleeper Alert",
+      "ticker": "RBLX",
+      "confidence": 50,
+      "detail": "Bottom half but gaining +8.84% momentum",
+      "return_at_prediction": null
     }
   ]
 }
