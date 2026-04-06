@@ -1340,8 +1340,43 @@ start_date = st.session_state["tw_start"]
 end_date = st.session_state["tw_end"]
 roster_search = ""
 
+# --- Persistent file cache ---
+_CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".data_cache")
+os.makedirs(_CACHE_DIR, exist_ok=True)
+
+def _file_cache(ttl_seconds):
+    """Decorator: persistent file cache that survives app restarts."""
+    import pickle, hashlib, time
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            # Build cache key from function name + args
+            key_data = f"{func.__name__}:{str(args)}:{str(kwargs)}"
+            key_hash = hashlib.md5(key_data.encode()).hexdigest()
+            cache_path = os.path.join(_CACHE_DIR, f"{func.__name__}_{key_hash}.pkl")
+            # Check if cached file exists and is fresh
+            if os.path.exists(cache_path):
+                try:
+                    age = time.time() - os.path.getmtime(cache_path)
+                    if age < ttl_seconds:
+                        with open(cache_path, "rb") as f:
+                            return pickle.load(f)
+                except Exception:
+                    pass
+            # Fetch fresh data
+            result = func(*args, **kwargs)
+            # Save to file
+            try:
+                with open(cache_path, "wb") as f:
+                    pickle.dump(result, f)
+            except Exception:
+                pass
+            return result
+        return wrapper
+    return decorator
+
 # --- Main ---
 
+@_file_cache(ttl_seconds=3600)
 @st.cache_data(ttl=3600)
 def fetch_returns(tickers, start, end):
     """Download adjusted prices and compute daily cumulative % return."""
@@ -1374,6 +1409,7 @@ def fetch_returns(tickers, start, end):
     return pct_return, start_prices, end_prices
 
 
+@_file_cache(ttl_seconds=3600)
 @st.cache_data(ttl=3600)
 def fetch_dividends(tickers, start, end):
     """Fetch total dividends per share for each ticker in the date range."""
@@ -1396,6 +1432,7 @@ def fetch_dividends(tickers, start, end):
     return dict(results)
 
 
+@_file_cache(ttl_seconds=3600)
 @st.cache_data(ttl=3600)
 def compute_signals(tickers, start, end):
     """Compute technical buy/sell signals from price data."""
@@ -1536,6 +1573,7 @@ def fetch_news_batch(tickers_tuple):
     return [r for r in results if r]
 
 
+@_file_cache(ttl_seconds=86400)
 @st.cache_data(ttl=86400)
 def fetch_earnings(tickers_tuple):
     """Fetch next earnings date and EPS estimates for tickers via yfinance using threads."""
