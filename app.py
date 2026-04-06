@@ -4131,18 +4131,15 @@ with tab_dashboard:
             unsafe_allow_html=True,
         )
 
-        # --- Next Week Events ---
+        # --- This Week Events ---
         import datetime as _dt_mod
         _today = _dt_mod.date.today()
-        # Find next Monday
-        _days_until_mon = (7 - _today.weekday()) % 7
-        if _days_until_mon == 0:
-            _days_until_mon = 7
-        _next_monday = _today + _dt_mod.timedelta(days=_days_until_mon)
-        _next_friday = _next_monday + _dt_mod.timedelta(days=4)
-        _week_label = f"{_next_monday.strftime('%b %d')} – {_next_friday.strftime('%b %d')}"
+        # Find this week's Sunday (week starts on Sunday)
+        _this_sunday = _today - _dt_mod.timedelta(days=(_today.weekday() + 1) % 7)
+        _this_saturday = _this_sunday + _dt_mod.timedelta(days=6)
+        _week_label = f"{_this_sunday.strftime('%b %d')} – {_this_saturday.strftime('%b %d')}"
 
-        # Collect earnings happening next week
+        # Collect earnings happening this week
         _next_week_earnings = []
         for t in valid_tickers:
             earn = earnings_data.get(t, {})
@@ -4152,7 +4149,7 @@ with tab_dashboard:
             try:
                 # Parse "Apr 30" style date, assume current year
                 _ed = _dt_mod.datetime.strptime(earn_date_str, "%b %d").date().replace(year=_today.year)
-                if _next_monday <= _ed <= _next_friday:
+                if _this_sunday <= _ed <= _this_saturday:
                     eps_est = earn.get("eps_est")
                     _next_week_earnings.append((t, _ed, eps_est))
             except Exception:
@@ -4180,7 +4177,7 @@ with tab_dashboard:
         if _events_items:
             _events_html = ''.join(_events_items)
         else:
-            _events_html = '<div style="color:var(--muted);font-size:0.82rem;padding:0.6rem 0;">No earnings scheduled next week for roster stocks.</div>'
+            _events_html = '<div style="color:var(--muted);font-size:0.82rem;padding:0.6rem 0;">No earnings scheduled this week for roster stocks.</div>'
 
         _earnings_count = len(_next_week_earnings)
         st.markdown(
@@ -4188,7 +4185,7 @@ with tab_dashboard:
             f'<div style="background:rgba(251,253,250,0.96);border:1px solid rgba(18,51,36,0.12);border-radius:18px;padding:1rem 1.4rem;box-shadow:0 4px 12px rgba(82,58,32,0.06);">'
             f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.7rem;">'
             f'<div>'
-            f'<div style="font-size:0.95rem;font-weight:800;">📅 Next Week</div>'
+            f'<div style="font-size:0.95rem;font-weight:800;">📅 This Week</div>'
             f'<div style="font-size:0.72rem;color:var(--muted);">{_week_label}</div>'
             f'</div>'
             f'<span style="font-size:0.7rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:999px;background:rgba(14,95,58,0.08);color:var(--accent);">{_earnings_count} earnings</span>'
@@ -4320,24 +4317,22 @@ with tab_feud:
         unsafe_allow_html=True,
     )
 
-    # Compute next Monday's week range
+    # Compute this week's range (Sun-Sat, week starts on Sunday)
     _now_et = datetime.datetime.now(ZoneInfo("America/New_York"))
     _today = _now_et.date()
-    _days_until_monday = (7 - _today.weekday()) % 7
-    if _days_until_monday == 0 and _now_et.hour >= 9:
-        _days_until_monday = 7
-    _next_monday = _today + datetime.timedelta(days=_days_until_monday if _days_until_monday > 0 else 7)
-    _next_friday = _next_monday + datetime.timedelta(days=4)
-    _week_label = f"{_next_monday.strftime('%b %d')} – {_next_friday.strftime('%b %d')}"
+    _this_sunday = _today - datetime.timedelta(days=(_today.weekday() + 1) % 7)
+    _this_saturday = _this_sunday + datetime.timedelta(days=6)
+    _week_label = f"{_this_sunday.strftime('%b %d')} – {_this_saturday.strftime('%b %d')}"
 
-    # Voting deadline check
-    _vote_cutoff = datetime.datetime.combine(_next_monday, datetime.time(9, 0), tzinfo=ZoneInfo("America/New_York"))
+    # Voting deadline check (Monday 9 AM ET)
+    _this_monday = _this_sunday + datetime.timedelta(days=1)
+    _vote_cutoff = datetime.datetime.combine(_this_monday, datetime.time(9, 0), tzinfo=ZoneInfo("America/New_York"))
     _voting_open = _now_et < _vote_cutoff
 
     # Build stock list for JS
     _stock_list_js = json.dumps([{"ticker": p["ticker"], "name": p["name"], "etf": p.get("etf", "")} for p in PLAYERS])
 
-    # Fetch earnings for next week's challenge
+    # Fetch earnings for this week's challenge
     _feud_earnings = fetch_earnings(tuple(TICKERS))
     _next_week_earnings = []
     for t, edata in _feud_earnings.items():
@@ -4346,8 +4341,8 @@ with tab_feud:
             try:
                 # Parse "Apr 30" style date
                 edate = datetime.datetime.strptime(f"{edate_str} {_now_et.year}", "%b %d %Y").date()
-                # Check if earnings fall in the next week (Mon-Fri)
-                if _next_monday <= edate <= _next_friday:
+                # Check if earnings fall in this week (Sun-Sat)
+                if _this_sunday <= edate <= _this_saturday:
                     _next_week_earnings.append({
                         "ticker": t,
                         "name": NAME_MAP.get(t, t),
@@ -4407,7 +4402,7 @@ with tab_feud:
             color = _bar_colors[min(i, len(_bar_colors) - 1)]
             _mvp_bars += (
                 f'<div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.4rem;">'
-                f'<span style="font-weight:700;font-size:0.85rem;min-width:4.5rem;">{html_mod.escape(str(ticker))}</span>'
+                f'<span style="font-weight:700;font-size:0.85rem;min-width:4.5rem;color:{_ETF_CLR.get(ETF_MAP.get(str(ticker), ""), "inherit")};">{html_mod.escape(str(ticker))}</span>'
                 f'<div style="flex:1;height:26px;background:rgba(18,51,36,0.06);border-radius:8px;overflow:hidden;">'
                 f'<div style="height:100%;width:{max(pct, 5)}%;background:{color};border-radius:8px;'
                 f'display:flex;align-items:center;padding-left:0.5rem;font-size:0.7rem;font-weight:700;color:#fff;">'
@@ -4426,7 +4421,7 @@ with tab_feud:
             color = _bar_colors_hoh[min(i, len(_bar_colors_hoh) - 1)]
             _hoh_bars += (
                 f'<div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.4rem;">'
-                f'<span style="font-weight:700;font-size:0.85rem;min-width:4.5rem;">{html_mod.escape(str(etf))}</span>'
+                f'<span style="font-weight:700;font-size:0.85rem;min-width:4.5rem;color:{_ETF_CLR.get(str(etf), "inherit")};">{html_mod.escape(str(etf))}</span>'
                 f'<div style="flex:1;height:26px;background:rgba(18,51,36,0.06);border-radius:8px;overflow:hidden;">'
                 f'<div style="height:100%;width:{max(pct, 5)}%;background:{color};border-radius:8px;'
                 f'display:flex;align-items:center;padding-left:0.5rem;font-size:0.7rem;font-weight:700;color:#fff;">'
@@ -4461,11 +4456,11 @@ with tab_feud:
         _hoh_input_html = (
             '<div style="display:flex;gap:0.5rem;margin-bottom:0.8rem;flex-wrap:wrap;" id="hohBtns">'
             '<div class="hohBtn" onclick="selectHoh(this,\'ANTY\')" style="padding:0.5rem 1.2rem;border:2px solid rgba(18,51,36,0.12);border-radius:14px;cursor:pointer;font-weight:700;font-size:0.95rem;background:white;display:flex;align-items:center;gap:0.4rem;transition:all 0.15s;">'
-            '<span style="font-size:1.1rem;">\U0001f469\U0001f3fb</span> ANTY</div>'
+            '<span style="font-size:1.1rem;">\U0001f469\U0001f3fb</span> <span style="color:#a855f7;">ANTY</span></div>'
             '<div class="hohBtn" onclick="selectHoh(this,\'UNCL\')" style="padding:0.5rem 1.2rem;border:2px solid rgba(18,51,36,0.12);border-radius:14px;cursor:pointer;font-weight:700;font-size:0.95rem;background:white;display:flex;align-items:center;gap:0.4rem;transition:all 0.15s;">'
-            '<span style="font-size:1.1rem;">\U0001f468\u200d\U0001f9b3</span> UNCL</div>'
+            '<span style="font-size:1.1rem;">\U0001f468\u200d\U0001f9b3</span> <span style="color:#3b82f6;">UNCL</span></div>'
             '<div class="hohBtn" onclick="selectHoh(this,\'KIDZ\')" style="padding:0.5rem 1.2rem;border:2px solid rgba(18,51,36,0.12);border-radius:14px;cursor:pointer;font-weight:700;font-size:0.95rem;background:white;display:flex;align-items:center;gap:0.4rem;transition:all 0.15s;">'
-            '<span style="font-size:1.1rem;">\U0001f476\U0001f3fb</span> KIDZ</div>'
+            '<span style="font-size:1.1rem;">\U0001f476\U0001f3fb</span> <span style="color:#eab308;">KIDZ</span></div>'
             '</div>'
         )
     else:
@@ -4494,7 +4489,7 @@ with tab_feud:
             _earnings_cards_html += (
                 f'<div style="background:rgba(18,51,36,0.03);border:1px solid rgba(18,51,36,0.08);border-radius:12px;padding:0.8rem 1rem;">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">'
-                f'<div><span style="font-weight:700;font-size:0.9rem;">{html_mod.escape(_es["ticker"])}</span> '
+                f'<div><span style="font-weight:700;font-size:0.9rem;color:{_ETF_CLR.get(ETF_MAP.get(_es["ticker"], ""), "inherit")};">{html_mod.escape(_es["ticker"])}</span> '
                 f'<span style="color:#5d6f65;font-size:0.78rem;">{html_mod.escape(_es["name"])}</span></div>'
                 f'<span style="font-size:0.72rem;color:#5d6f65;">{html_mod.escape(_es["date"])}</span></div>'
                 f'<div style="font-size:0.75rem;color:#5d6f65;margin-bottom:0.6rem;">{_eps_str}</div>'
@@ -4513,7 +4508,7 @@ with tab_feud:
             )
         _earnings_cards_html += '</div>'
     else:
-        _earnings_cards_html = f'<div style="font-size:0.85rem;color:#5d6f65;text-align:center;padding:1rem;">{_sleep_emoji} No earnings scheduled next week. Enjoy the quiet!</div>'
+        _earnings_cards_html = f'<div style="font-size:0.85rem;color:#5d6f65;text-align:center;padding:1rem;">{_sleep_emoji} No earnings scheduled this week. Enjoy the quiet!</div>'
 
     _feud_html = f"""
     <style>
@@ -4596,7 +4591,7 @@ with tab_feud:
       <!-- Challenge 1: MVP -->
       <div class="challenge-card" style="z-index:30;position:relative;">
         <div class="challenge-label"><span class="challenge-num">1</span> Weekly Challenge</div>
-        <div class="challenge-title">{_trophy_emoji} Who will be MVP next week?</div>
+        <div class="challenge-title">{_trophy_emoji} Who will be MVP this week?</div>
         <div class="challenge-desc">The stock with the highest total return Mon&ndash;Fri wins.</div>
         {_mvp_input_html}
         <div id="mvpVoteHeader" class="votes-header">Community Votes ({_mvp_total} total)</div>
@@ -4630,6 +4625,7 @@ with tab_feud:
     var stocks = __STOCKS_DATA__;
     var sheetUrl = '__SHEET_URL__';
     var serverEarnVotes = __EARN_VOTES__;
+    var etfColors = {"ANTY": "#a855f7", "UNCL": "#3b82f6", "KIDZ": "#eab308"};
     // One-time reset: clear old vote data from localStorage
     var FEUD_VERSION = 'v3';
     if (localStorage.getItem('feud_version') !== FEUD_VERSION) {
@@ -4678,7 +4674,7 @@ with tab_feud:
             'onmouseover="this.style.background=\\\'rgba(14,95,58,0.06)\\\'" onmouseout="this.style.background=\\\'\\\'" ' +
             'onclick="selectMvp(\\\'' + s.ticker + '\\\',\\\'' + s.name + '\\\')">' +
             '<span><b>' + s.ticker + '</b> <span style="color:#5d6f65;font-size:0.78rem;">' + s.name + '</span></span>' +
-            '<span style="font-size:0.65rem;font-weight:700;padding:0.1rem 0.4rem;border-radius:999px;background:rgba(14,95,58,0.08);color:#0e5f3a;">' + s.etf + '</span></div>';
+            '<span style="font-size:0.65rem;font-weight:700;padding:0.1rem 0.4rem;border-radius:999px;background:rgba(14,95,58,0.08);color:' + (etfColors[s.etf] || '#0e5f3a') + ';">' + s.etf + '</span></div>';
         }).join('');
       }
       mvpDropdown.style.display = 'block';
@@ -4727,7 +4723,7 @@ with tab_feud:
         var pct = total > 0 ? Math.round(count / total * 100) : 0;
         var color = colors[Math.min(i, colors.length - 1)];
         return '<div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.4rem;">' +
-          '<span style="font-weight:700;font-size:0.85rem;min-width:4.5rem;">' + ticker + '</span>' +
+          '<span style="font-weight:700;font-size:0.85rem;min-width:4.5rem;color:' + (etfColors[ticker] || 'inherit') + ';">' + ticker + '</span>' +
           '<div style="flex:1;height:26px;background:rgba(18,51,36,0.06);border-radius:8px;overflow:hidden;">' +
           '<div style="height:100%;width:' + Math.max(pct, 5) + '%;background:' + color + ';border-radius:8px;' +
           'display:flex;align-items:center;padding-left:0.5rem;font-size:0.7rem;font-weight:700;color:#fff;">' +
@@ -4966,7 +4962,7 @@ with tab_feud:
         '<div style="display:flex;align-items:center;gap:0.5rem;margin:1.2rem 0 0.5rem;">'
         '<span style="font-size:1.3rem;">\U0001f52e</span>'
         '<span style="font-size:1.1rem;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;'
-        'color:var(--accent);">Next Week\'s Predictions</span></div>',
+        'color:var(--accent);">This Week\'s Predictions</span></div>',
         unsafe_allow_html=True,
     )
 
@@ -5008,7 +5004,7 @@ with tab_feud:
                     f'<div class="pred-card">'
                     f'<div class="pred-icon">{pred["icon"]}</div>'
                     f'<div class="pred-title">{html_mod.escape(pred["title"])}</div>'
-                    f'<div class="pred-ticker">{pred.get("emoji", "")} {html_mod.escape(pred["ticker"])}</div>'
+                    f'<div class="pred-ticker">{pred.get("emoji", "")} <span style="color:{_ETF_CLR.get(ETF_MAP.get(pred["ticker"], ""), _ETF_CLR.get(pred["ticker"], "inherit"))};">{html_mod.escape(pred["ticker"])}</span></div>'
                     f'<div class="pred-name">{html_mod.escape(pred["name"])}</div>'
                     f'<div class="pred-detail">{html_mod.escape(pred["detail"])}</div>'
                     f'<div class="pred-confidence">{conf}% confidence</div>'
