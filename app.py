@@ -1539,12 +1539,21 @@ def fetch_news_batch(tickers_tuple):
 
 @st.cache_data(ttl=86400)
 def fetch_earnings(tickers_tuple):
-    """Fetch next earnings date and EPS estimates for tickers via yfinance using threads."""
+    """Fetch next earnings date and EPS estimates for tickers via yfinance using threads.
+    Falls back to earnings_cache.json when API calls fail (e.g. on Streamlit Cloud)."""
     from concurrent.futures import ThreadPoolExecutor
     import datetime as _dt
     import time as _time
 
     _empty = {"next_date": "", "eps_est": None, "eps_actual": None, "last_earnings_date": "", "last_eps_reported": None, "last_eps_estimate": None}
+
+    # Load static cache as fallback (for Streamlit Cloud where Yahoo Finance blocks API)
+    _cache_fallback = {}
+    try:
+        with open("earnings_cache.json") as _f:
+            _cache_fallback = json.load(_f)
+    except Exception:
+        pass
 
     def _fetch_one(ticker):
         for attempt in range(2):
@@ -1596,6 +1605,9 @@ def fetch_earnings(tickers_tuple):
                     _time.sleep(0.5)
                     continue
                 print(f"[fetch_earnings] {ticker} failed after retry: {e}")
+        # Fallback to static cache
+        if ticker in _cache_fallback:
+            return ticker, _cache_fallback[ticker]
         return ticker, dict(_empty)
 
     with ThreadPoolExecutor(max_workers=5) as pool:
