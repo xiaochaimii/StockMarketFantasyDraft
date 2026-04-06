@@ -3760,7 +3760,7 @@ with tab_dashboard:
 
         # --- Leaderboard ---
         st.markdown(
-            '<div style="display:flex;align-items:center;gap:0.5rem;margin:1.2rem 0 0.5rem;">'
+            '<div style="display:flex;align-items:center;gap:0.5rem;margin:1.2rem 0 0.2rem;">'
             '<span style="font-size:1.3rem;">\U0001f3c6</span>'
             '<span style="font-size:1.1rem;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;'
             'color:var(--accent);">Leaderboard</span></div>',
@@ -3770,44 +3770,49 @@ with tab_dashboard:
         # --- Date range form ---
         st.markdown(
             '<style>'
-            '/* Date form: no border, tight spacing */'
-            '[data-testid="stForm"] { border: none !important; padding: 0 !important; }'
-            '/* Compact date inputs */'
+            '/* Strip ALL spacing from form and its children */'
+            '[data-testid="stForm"] { border: none !important; padding: 0 !important; margin: -0.5rem 0 -0.5rem !important; }'
+            '[data-testid="stForm"] [data-testid="stElementContainer"] { margin: 0 !important; padding: 0 !important; }'
+            '[data-testid="stForm"] [data-testid="stColumn"] > div { padding: 0 !important; }'
+            '[data-testid="stForm"] [data-testid="stHorizontalBlock"] { gap: 0.3rem !important; }'
+            '[data-testid="stForm"] [data-testid="stVerticalBlockBorderWrapper"] { margin: 0 !important; padding: 0 !important; }'
+            '/* Date inputs */'
+            '[data-testid="stDateInput"] { margin: 0 !important; padding: 0 !important; }'
+            '[data-testid="stDateInput"] > div { padding: 0 !important; margin: 0 !important; }'
             '[data-testid="stDateInput"] > div > div {'
             '  border: 1.5px solid rgba(18,51,36,0.12) !important; border-radius: 8px !important;'
-            '  padding: 0 !important; min-height: 0 !important; height: auto !important; }'
+            '  padding: 0 0.2rem !important; min-height: 0 !important; }'
             '[data-testid="stDateInput"] > div > div:focus-within {'
             '  border-color: rgba(14,95,58,0.4) !important; }'
             '[data-testid="stDateInput"] input {'
-            '  font-size: 0.8rem !important; padding: 0.25rem 0.4rem !important;'
+            '  font-size: 0.8rem !important; padding: 0.2rem 0.2rem !important;'
             '  height: auto !important; min-height: 0 !important; }'
+            '[data-testid="stDateInput"] button { padding: 0 0.15rem !important; }'
+            '[data-testid="stDateInput"] label { margin: 0 !important; }'
             '[data-testid="stDateInput"] label p {'
             '  font-size: 0.68rem !important; font-weight: 700 !important; color: #5d6f65 !important;'
-            '  margin-bottom: -2px !important; }'
+            '  margin: 0 0 1px 0 !important; }'
             '/* Compact buttons */'
+            '[data-testid="stFormSubmitButton"] { margin: 0 !important; padding: 0 !important; }'
             '[data-testid="stFormSubmitButton"] button {'
             '  font-size: 0.72rem !important; padding: 0.25rem 0.7rem !important;'
             '  border-radius: 8px !important; min-height: 0 !important; height: auto !important; }'
-            '/* Reduce column gaps */'
-            '[data-testid="stForm"] [data-testid="stHorizontalBlock"] { gap: 0.4rem !important; }'
             '</style>',
             unsafe_allow_html=True,
         )
         with st.form("custom_date_form", border=False):
-            _c1, _c_sep, _c2, _c_btn, _c_rst, _c_pad = st.columns([1, 0.1, 1, 0.5, 0.5, 3])
+            _c1, _c2, _c_btns = st.columns([1, 1, 1])
             with _c1:
                 _form_start = st.date_input("Start Date", value=start_date, format="MM/DD/YYYY")
-            with _c_sep:
-                st.markdown('<div style="text-align:center;padding-top:1.5rem;color:#5d6f65;font-size:0.75rem;">\u2013</div>',
-                            unsafe_allow_html=True)
             with _c2:
                 _form_end = st.date_input("End Date", value=end_date, format="MM/DD/YYYY")
-            with _c_btn:
+            with _c_btns:
                 st.markdown('<div style="height:1.1rem;"></div>', unsafe_allow_html=True)
-                _submitted = st.form_submit_button("Apply", type="primary")
-            with _c_rst:
-                st.markdown('<div style="height:1.1rem;"></div>', unsafe_allow_html=True)
-                _reset = st.form_submit_button("Reset")
+                _btn_cols = st.columns(2)
+                with _btn_cols[0]:
+                    _submitted = st.form_submit_button("Apply", type="primary", use_container_width=True)
+                with _btn_cols[1]:
+                    _reset = st.form_submit_button("Reset", use_container_width=True)
         if _submitted:
             st.session_state["tw_start"] = _form_start
             st.session_state["tw_end"] = _form_end
