@@ -4228,6 +4228,7 @@ with tab_dashboard:
             _events_html = '<div style="color:var(--muted);font-size:0.82rem;padding:0.6rem 0;">No earnings scheduled this week for roster stocks.</div>'
 
         _earnings_count = len(_next_week_earnings)
+        _feud_note = '<div style="font-size:0.72rem;color:var(--muted);margin-top:0.5rem;">\U0001f449 Head to the <b>Family Feud</b> tab to vote Beat or Miss on upcoming earnings!</div>' if _earnings_count > 0 else ''
         st.markdown(
             f'<div style="margin:1.2rem 0 0.8rem;">'
             f'<div style="background:rgba(251,253,250,0.96);border:1px solid rgba(18,51,36,0.12);border-radius:18px;padding:1rem 1.4rem;box-shadow:0 4px 12px rgba(82,58,32,0.06);">'
@@ -4241,6 +4242,7 @@ with tab_dashboard:
             f'<div style="display:flex;gap:0.7rem;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:0.3rem;flex-wrap:wrap;">'
             f'{_events_html}'
             f'</div>'
+            f'{_feud_note}'
             f'</div></div>',
             unsafe_allow_html=True,
         )
