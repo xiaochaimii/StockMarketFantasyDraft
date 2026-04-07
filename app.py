@@ -2504,7 +2504,7 @@ with tab_dashboard:
 
         # Inline iframe for countdown timers (no wrapper box)
         _iframe_style = 'border:none;height:14px;vertical-align:text-bottom;display:inline-block;overflow:hidden;background:transparent;'
-        _iframe_font = 'font-family:Space Grotesk,-apple-system,sans-serif;font-size:0.72rem;color:#5d6f65;'
+        _iframe_font = 'font-family:Space Grotesk,-apple-system,sans-serif;font-size:11px;color:#5d6f65;'
 
         if is_market_open():
             market_close_et = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
@@ -2523,15 +2523,15 @@ with tab_dashboard:
                 'el.textContent=ct+&quot; · &quot;+rt;'
                 'if(rs&lt;=0)setTimeout(function(){try{window.parent.location.reload();}catch(e){}},2000);}'
                 'u();setInterval(u,1000);'
-                f'</script></body>" style="{_iframe_style}width:350px;" scrolling="no"></iframe>'
+                f'</script></body>" style="{_iframe_style}width:300px;" scrolling="no"></iframe>'
             )
-            _hol_part = f' &middot; <span style="color:#aaa;">{_hol_html}</span>' if _hol_html else ''
+            _hol_part = f' &middot; <span style="color:#aaa;font-size:0.65rem;">{_hol_html}</span>' if _hol_html else ''
             st.markdown(
-                f'<div style="display:flex;align-items:center;gap:0.4rem;font-size:0.72rem;flex-wrap:wrap;margin-bottom:0.3rem;">'
-                f'<div style="display:inline-flex;align-items:center;gap:0.3rem;background:rgba(25,160,95,0.1);padding:0.15rem 0.5rem;border-radius:8px;">'
-                f'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#4ade80;"></span>'
-                f'<span style="font-weight:700;color:#19a05f;font-size:0.72rem;">LIVE</span></div>'
-                f'<span style="color:#5d6f65;font-size:0.72rem;">{live_timestamp}</span>'
+                f'<div style="display:flex;align-items:center;gap:0.35rem;font-size:0.68rem;flex-wrap:wrap;margin-bottom:0.3rem;">'
+                f'<div style="display:inline-flex;align-items:center;gap:0.25rem;background:rgba(25,160,95,0.1);padding:0.12rem 0.4rem;border-radius:6px;">'
+                f'<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#4ade80;"></span>'
+                f'<span style="font-weight:700;color:#19a05f;font-size:0.65rem;">LIVE</span></div>'
+                f'<span style="color:#5d6f65;">{live_timestamp}</span>'
                 f'{_div_html}'
                 f'{_cd_iframe}'
                 f'{_hol_part}'
@@ -2554,15 +2554,15 @@ with tab_dashboard:
                 'var t=&quot;Opens in &quot;;if(d&gt;0)t+=d+&quot;d &quot;;t+=h+&quot;h &quot;+(m&lt;10?&quot;0&quot;:&quot;&quot;)+m+&quot;m &quot;+(sc&lt;10?&quot;0&quot;:&quot;&quot;)+sc+&quot;s&quot;;'
                 'e.textContent=t;s--;}'
                 'u();setInterval(u,1000);'
-                f'</script></body>" style="{_iframe_style}width:200px;" scrolling="no"></iframe>'
+                f'</script></body>" style="{_iframe_style}width:160px;" scrolling="no"></iframe>'
             )
-            _hol_part = f' &middot; <span style="color:#aaa;">{_hol_html}</span>' if _hol_html else ''
+            _hol_part = f' &middot; <span style="color:#aaa;font-size:0.65rem;">{_hol_html}</span>' if _hol_html else ''
             st.markdown(
-                f'<div style="display:flex;align-items:center;gap:0.4rem;font-size:0.72rem;flex-wrap:wrap;margin-bottom:0.3rem;">'
-                f'<div style="display:inline-flex;align-items:center;gap:0.3rem;background:rgba(93,111,101,0.08);padding:0.15rem 0.5rem;border-radius:8px;">'
-                f'<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#aaa;"></span>'
-                f'<span style="font-weight:700;color:#888;font-size:0.72rem;">CLOSED</span></div>'
-                f'<span style="color:#5d6f65;font-size:0.72rem;">{live_timestamp}</span>'
+                f'<div style="display:flex;align-items:center;gap:0.35rem;font-size:0.68rem;flex-wrap:wrap;margin-bottom:0.3rem;">'
+                f'<div style="display:inline-flex;align-items:center;gap:0.25rem;background:rgba(93,111,101,0.08);padding:0.12rem 0.4rem;border-radius:6px;">'
+                f'<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#aaa;"></span>'
+                f'<span style="font-weight:700;color:#888;font-size:0.65rem;">CLOSED</span></div>'
+                f'<span style="color:#5d6f65;">{live_timestamp}</span>'
                 f'{_div_html}'
                 f'{_cd_iframe}'
                 f'{_hol_part}'
