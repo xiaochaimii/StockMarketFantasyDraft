@@ -2713,7 +2713,18 @@ with tab_dashboard:
         _etf_names_top = {"ANTY": "Auntie", "UNCL": "Uncle", "KIDZ": "Kids"}
 
         _etf_cards_top = ''
-        for etf_code in ["ANTY", "UNCL", "KIDZ"]:
+        # Compute avg return per ETF for sorting (best to worst)
+        _etf_avg_returns = {}
+        for _ec_tmp in ["ANTY", "UNCL", "KIDZ"]:
+            _tickers_tmp = [t for t in valid_tickers if ETF_MAP.get(t) == _ec_tmp]
+            if _tickers_tmp:
+                _inv_tmp = INVESTMENT * len(_tickers_tmp)
+                _vl_tmp = sum(INVESTMENT / start_prices[t] * end_prices[t] + INVESTMENT / start_prices[t] * dividends.get(t, 0.0) for t in _tickers_tmp)
+                _etf_avg_returns[_ec_tmp] = ((_vl_tmp / _inv_tmp) - 1) * 100 if _inv_tmp else 0
+            else:
+                _etf_avg_returns[_ec_tmp] = 0
+        _etf_order = sorted(["ANTY", "UNCL", "KIDZ"], key=lambda x: _etf_avg_returns[x], reverse=True)
+        for etf_code in _etf_order:
             _etf_tickers_t = [t for t in valid_tickers if ETF_MAP.get(t) == etf_code]
             if not _etf_tickers_t:
                 continue
