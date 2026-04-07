@@ -1541,6 +1541,8 @@ def compute_throne_history(returns, valid_tickers, name_map, dividends=None, sta
         "mvp_history": mvp_history,
         "bench_history": bench_history,
         "streak_winner": streak_winner,
+        "mvp_longest": mvp_longest,
+        "bench_longest": bench_longest,
     }
 
 
@@ -2803,41 +2805,29 @@ with tab_dashboard:
         # Build badges as opposite pairs
         badges_data = []  # (icon, name, holder, desc)
 
-        # Pair 1: Diamond Hands vs Bag Holder (with date ranges)
-        diamond = _find_badge("Diamond Hands")
-        bottom = _find_badge("Bottom Feeder")
-        # Build total-return daily data for MVP/bench date lookups
+        # Build total-return daily data (used by Dead Weight badge)
         _daily_tr = returns[valid_tickers].copy()
         for _t in valid_tickers:
             _div_ret = (dividends.get(_t, 0.0) / start_prices[_t]) * 100 if start_prices[_t] else 0
             _daily_tr[_t] = _daily_tr[_t] + _div_ret
-        if diamond and diamond["unlocked"]:
-            # Find first and last date this stock was MVP
-            dh_ticker = diamond["holder"].split(" (")[0]
-            if len(returns) > 1:
-                daily_mvp = _daily_tr.iloc[1:].idxmax(axis=1)
-                dh_dates = daily_mvp[daily_mvp == dh_ticker].index
-                if len(dh_dates) > 0:
-                    dh_first = dh_dates[0].strftime("%b %d")
-                    dh_last = dh_dates[-1].strftime("%b %d")
-                    badges_data.append(("\U0001f48e", "Diamond Hands", f'{diamond["holder"]}, {dh_first} \u2013 {dh_last}', "Most days as MVP"))
-                else:
-                    badges_data.append(("\U0001f48e", "Diamond Hands", diamond["holder"], "Most days as MVP"))
-            else:
-                badges_data.append(("\U0001f48e", "Diamond Hands", diamond["holder"], "Most days as MVP"))
-        if bottom and bottom["unlocked"]:
-            bh_ticker = bottom["holder"].split(" (")[0]
-            if len(returns) > 1:
-                daily_bench = _daily_tr.iloc[1:].idxmin(axis=1)
-                bh_dates = daily_bench[daily_bench == bh_ticker].index
-                if len(bh_dates) > 0:
-                    bh_first = bh_dates[0].strftime("%b %d")
-                    bh_last = bh_dates[-1].strftime("%b %d")
-                    badges_data.append(("\U0001f9fb", "Bag Holder", f'{bottom["holder"]}, {bh_first} \u2013 {bh_last}', "Most days as benchwarmer"))
-                else:
-                    badges_data.append(("\U0001f9fb", "Bag Holder", bottom["holder"], "Most days as benchwarmer"))
-            else:
-                badges_data.append(("\U0001f9fb", "Bag Holder", bottom["holder"], "Most days as benchwarmer"))
+
+        # Pair 1: Diamond Hands vs Bag Holder (use longest streak from throne)
+        diamond = _find_badge("Diamond Hands")
+        bottom = _find_badge("Bottom Feeder")
+        if diamond and diamond["unlocked"] and throne.get("mvp_longest"):
+            _lg = throne["mvp_longest"]
+            _start = _lg["start"].strftime("%b %d") if _lg["start"] else ""
+            _end = _lg["end"].strftime("%b %d") if _lg["end"] else ""
+            badges_data.append(("\U0001f48e", "Diamond Hands", f'{_lg["ticker"]} ({_lg["streak"]}d), {_start} \u2013 {_end}', "Most days as MVP"))
+        elif diamond and diamond["unlocked"]:
+            badges_data.append(("\U0001f48e", "Diamond Hands", diamond["holder"], "Most days as MVP"))
+        if bottom and bottom["unlocked"] and throne.get("bench_longest"):
+            _lg = throne["bench_longest"]
+            _start = _lg["start"].strftime("%b %d") if _lg["start"] else ""
+            _end = _lg["end"].strftime("%b %d") if _lg["end"] else ""
+            badges_data.append(("\U0001f9fb", "Bag Holder", f'{_lg["ticker"]} ({_lg["streak"]}d), {_start} \u2013 {_end}', "Most days as benchwarmer"))
+        elif bottom and bottom["unlocked"]:
+            badges_data.append(("\U0001f9fb", "Bag Holder", bottom["holder"], "Most days as benchwarmer"))
 
         # Pair 2: Moonshot vs Crash Landing
         bd = sup.get("best_day")
@@ -3738,11 +3728,13 @@ with tab_dashboard:
                 # The reign ended when the previous entry (newer) started
                 _end_d = history[i - 1]["date"].strftime("%b %d")
                 _dethroner = history[i - 1]["ticker"]
+                _days = (history[i - 1]["date"] - entry["date"]).days
                 _date_range = f'{_start_d} – {_end_d}' if _start_d != _end_d else _start_d
+                _day_label = f' ({_days}d)' if _days > 0 else ''
                 _past += (
                     f'<div style="display:flex;align-items:center;gap:0.8rem;padding:0.4rem 0.9rem;border-left:2px solid var(--border);margin-left:1.2rem;">'
                     f'<div style="flex:1;font-size:0.82rem;">{_etf_colored(t)} <span style="color:var(--muted);font-size:0.78rem;">{html_mod.escape(entry["name"])}</span></div>'
-                    f'<div style="font-size:0.75rem;color:var(--muted);white-space:nowrap;">{_date_range}</div>'
+                    f'<div style="font-size:0.75rem;color:var(--muted);white-space:nowrap;">{_date_range}{_day_label}</div>'
                     f'<div style="font-weight:600;color:{_rc};font-size:0.82rem;">{_r:+.2f}%</div></div>'
                 )
             return _header + _past + '</div>'
