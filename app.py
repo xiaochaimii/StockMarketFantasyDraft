@@ -4863,7 +4863,7 @@ with tab_feud:
 
       <!-- Challenge 3: Earnings -->
       <div class="challenge-card" style="margin-bottom:0;z-index:10;position:relative;">
-        <div class="challenge-label"><span class="challenge-num">3</span> Weekly Challenge</div>
+        <div class="challenge-label">Weekly Challenge</div>
         <div class="challenge-title">{_chart_emoji} Earnings Roulette</div>
         <div class="challenge-desc">Will the stock go UP or DOWN after earnings? Vote before earnings day at market close.</div>
         {_earnings_cards_html}
@@ -5217,96 +5217,95 @@ with tab_feud:
     _feud_base_height = 630 + len(_next_week_earnings) * 60
     components.html(_feud_html, height=_feud_base_height, scrolling=False)
 
-    # --- System Predictions (moved from Dashboard) ---
-    st.markdown(
-        '<div style="display:flex;align-items:center;gap:0.5rem;margin:1.2rem 0 0.5rem;">'
-        '<span style="font-size:1.3rem;">\U0001f52e</span>'
-        '<span style="font-size:1.1rem;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;'
-        'color:var(--accent);">This Week\'s Predictions</span></div>',
-        unsafe_allow_html=True,
-    )
-
-    if "_returns" in st.session_state:
-        _r = st.session_state["_returns"]
-        _vt = st.session_state["_valid_tickers"]
-        _sp = st.session_state["_start_prices"]
-        _div = st.session_state["_dividends"]
-        _ep = st.session_state["_end_prices"]
-        _fr = pd.Series({
-            t: ((INVESTMENT / _sp[t] * _ep[t] + INVESTMENT / _sp[t] * _div.get(t, 0.0)) / INVESTMENT - 1) * 100
-            for t in _vt
-        }).sort_values(ascending=False)
-        preds = generate_predictions(_r, _vt, NAME_MAP, ETF_MAP, _fr, _div, _sp, INVESTMENT)
-        pred_history = load_pred_history()
-
-        if preds:
-            record_predictions(preds, end_date.isoformat(), pred_history)
-
-            pred_grid_html = '<div class="pred-grid">'
-            for pred in preds:
-                conf = pred.get("confidence", 50)
-                pred_key = f'{pred["title"]}_{pred["ticker"]}'
-                votes = pred_history.get("votes", {}).get(pred_key, {"up": 0, "down": 0})
-                total_votes = votes["up"] + votes["down"]
-                agree_pct = int(votes["up"] / total_votes * 100) if total_votes > 0 else 0
-
-                vote_bar = ""
-                if total_votes > 0:
-                    vote_bar = (
-                        f'<div style="display:flex;align-items:center;gap:0.4rem;margin-top:0.3rem;'
-                        f'padding-top:0.3rem;border-top:1px solid rgba(14,95,58,0.1);">'
-                        f'<span style="font-size:0.7rem;">\U0001f44d {votes["up"]}</span>'
-                        f'<span style="font-size:0.7rem;">\U0001f44e {votes["down"]}</span>'
-                        f'<span style="font-size:0.6rem;color:var(--muted);margin-left:auto;">{agree_pct}% agree</span>'
-                        f'</div>'
-                    )
-                pred_grid_html += (
-                    f'<div class="pred-card">'
-                    f'<div class="pred-icon">{pred["icon"]}</div>'
-                    f'<div class="pred-title">{html_mod.escape(pred["title"])}</div>'
-                    f'<div class="pred-ticker">{pred.get("emoji", "")} <span style="color:{_ETF_CLR.get(ETF_MAP.get(pred["ticker"], ""), _ETF_CLR.get(pred["ticker"], "inherit"))};">{html_mod.escape(pred["ticker"])}</span></div>'
-                    f'<div class="pred-name">{html_mod.escape(pred["name"])}</div>'
-                    f'<div class="pred-detail">{html_mod.escape(pred["detail"])}</div>'
-                    f'<div class="pred-confidence">{conf}% confidence</div>'
-                    f'{vote_bar}'
-                    f'</div>'
-                )
-            pred_grid_html += '</div>'
-            st.markdown(pred_grid_html, unsafe_allow_html=True)
-
-            past_results = check_past_predictions(pred_history, _fr)
-            if past_results:
-                scored = [r for r in past_results if r["correct"] is not None]
-                if scored:
-                    correct_count = sum(1 for r in scored if r["correct"])
-                    total_scored = len(scored)
-                    accuracy = int(correct_count / total_scored * 100)
-                    # Build individual result rows
-                    _result_rows = ""
-                    for r in scored:
-                        _icon = "\u2705" if r["correct"] else "\u274c"
-                        _color = "#19a05f" if r["correct"] else "#d14a34"
-                        _result_rows += (
-                            f'<div style="display:flex;align-items:center;gap:0.5rem;padding:0.25rem 0;'
-                            f'font-size:0.75rem;border-bottom:1px solid rgba(18,51,36,0.06);">'
-                            f'<span>{_icon}</span>'
-                            f'<span style="font-weight:700;min-width:3.5rem;">{html_mod.escape(r["ticker"])}</span>'
-                            f'<span style="color:#5d6f65;">{html_mod.escape(r["title"])}</span>'
-                            f'<span style="margin-left:auto;color:{_color};font-size:0.72rem;">{html_mod.escape(r["actual"])}</span>'
-                            f'</div>'
-                        )
-                    st.markdown(
-                        f'<div style="margin-top:0.5rem;padding:0.5rem 0.8rem;background:rgba(14,95,58,0.06);'
-                        f'border:1px solid rgba(14,95,58,0.15);border-radius:12px;font-size:0.8rem;">'
-                        f'\U0001f3af <b>Past Accuracy:</b> {correct_count}/{total_scored} predictions correct ({accuracy}%)'
-                        f'<div style="margin-top:0.4rem;">{_result_rows}</div>'
-                        f'</div>',
-                        unsafe_allow_html=True,
-                    )
-
-            st.caption("\U0001f916 System-generated based on 5-day momentum, volatility, and trend analysis. Not financial advice!")
-    else:
-        st.info("Visit the Dashboard tab first to load stock data.")
+    # --- System Predictions (commented out) ---
+    # st.markdown(
+    #     '<div style="display:flex;align-items:center;gap:0.5rem;margin:1.2rem 0 0.5rem;">'
+    #     '<span style="font-size:1.3rem;">\U0001f52e</span>'
+    #     '<span style="font-size:1.1rem;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;'
+    #     'color:var(--accent);">This Week\'s Predictions</span></div>',
+    #     unsafe_allow_html=True,
+    # )
+    #
+    # if "_returns" in st.session_state:
+    #     _r = st.session_state["_returns"]
+    #     _vt = st.session_state["_valid_tickers"]
+    #     _sp = st.session_state["_start_prices"]
+    #     _div = st.session_state["_dividends"]
+    #     _ep = st.session_state["_end_prices"]
+    #     _fr = pd.Series({
+    #         t: ((INVESTMENT / _sp[t] * _ep[t] + INVESTMENT / _sp[t] * _div.get(t, 0.0)) / INVESTMENT - 1) * 100
+    #         for t in _vt
+    #     }).sort_values(ascending=False)
+    #     preds = generate_predictions(_r, _vt, NAME_MAP, ETF_MAP, _fr, _div, _sp, INVESTMENT)
+    #     pred_history = load_pred_history()
+    #
+    #     if preds:
+    #         record_predictions(preds, end_date.isoformat(), pred_history)
+    #
+    #         pred_grid_html = '<div class="pred-grid">'
+    #         for pred in preds:
+    #             conf = pred.get("confidence", 50)
+    #             pred_key = f'{pred["title"]}_{pred["ticker"]}'
+    #             votes = pred_history.get("votes", {}).get(pred_key, {"up": 0, "down": 0})
+    #             total_votes = votes["up"] + votes["down"]
+    #             agree_pct = int(votes["up"] / total_votes * 100) if total_votes > 0 else 0
+    #
+    #             vote_bar = ""
+    #             if total_votes > 0:
+    #                 vote_bar = (
+    #                     f'<div style="display:flex;align-items:center;gap:0.4rem;margin-top:0.3rem;'
+    #                     f'padding-top:0.3rem;border-top:1px solid rgba(14,95,58,0.1);">'
+    #                     f'<span style="font-size:0.7rem;">\U0001f44d {votes["up"]}</span>'
+    #                     f'<span style="font-size:0.7rem;">\U0001f44e {votes["down"]}</span>'
+    #                     f'<span style="font-size:0.6rem;color:var(--muted);margin-left:auto;">{agree_pct}% agree</span>'
+    #                     f'</div>'
+    #                 )
+    #             pred_grid_html += (
+    #                 f'<div class="pred-card">'
+    #                 f'<div class="pred-icon">{pred["icon"]}</div>'
+    #                 f'<div class="pred-title">{html_mod.escape(pred["title"])}</div>'
+    #                 f'<div class="pred-ticker">{pred.get("emoji", "")} <span style="color:{_ETF_CLR.get(ETF_MAP.get(pred["ticker"], ""), _ETF_CLR.get(pred["ticker"], "inherit"))};">{html_mod.escape(pred["ticker"])}</span></div>'
+    #                 f'<div class="pred-name">{html_mod.escape(pred["name"])}</div>'
+    #                 f'<div class="pred-detail">{html_mod.escape(pred["detail"])}</div>'
+    #                 f'<div class="pred-confidence">{conf}% confidence</div>'
+    #                 f'{vote_bar}'
+    #                 f'</div>'
+    #             )
+    #         pred_grid_html += '</div>'
+    #         st.markdown(pred_grid_html, unsafe_allow_html=True)
+    #
+    #         past_results = check_past_predictions(pred_history, _fr)
+    #         if past_results:
+    #             scored = [r for r in past_results if r["correct"] is not None]
+    #             if scored:
+    #                 correct_count = sum(1 for r in scored if r["correct"])
+    #                 total_scored = len(scored)
+    #                 accuracy = int(correct_count / total_scored * 100)
+    #                 _result_rows = ""
+    #                 for r in scored:
+    #                     _icon = "\u2705" if r["correct"] else "\u274c"
+    #                     _color = "#19a05f" if r["correct"] else "#d14a34"
+    #                     _result_rows += (
+    #                         f'<div style="display:flex;align-items:center;gap:0.5rem;padding:0.25rem 0;'
+    #                         f'font-size:0.75rem;border-bottom:1px solid rgba(18,51,36,0.06);">'
+    #                         f'<span>{_icon}</span>'
+    #                         f'<span style="font-weight:700;min-width:3.5rem;">{html_mod.escape(r["ticker"])}</span>'
+    #                         f'<span style="color:#5d6f65;">{html_mod.escape(r["title"])}</span>'
+    #                         f'<span style="margin-left:auto;color:{_color};font-size:0.72rem;">{html_mod.escape(r["actual"])}</span>'
+    #                         f'</div>'
+    #                     )
+    #                 st.markdown(
+    #                     f'<div style="margin-top:0.5rem;padding:0.5rem 0.8rem;background:rgba(14,95,58,0.06);'
+    #                     f'border:1px solid rgba(14,95,58,0.15);border-radius:12px;font-size:0.8rem;">'
+    #                     f'\U0001f3af <b>Past Accuracy:</b> {correct_count}/{total_scored} predictions correct ({accuracy}%)'
+    #                     f'<div style="margin-top:0.4rem;">{_result_rows}</div>'
+    #                     f'</div>',
+    #                     unsafe_allow_html=True,
+    #                 )
+    #
+    #         st.caption("\U0001f916 System-generated based on 5-day momentum, volatility, and trend analysis. Not financial advice!")
+    # else:
+    #     st.info("Visit the Dashboard tab first to load stock data.")
 
 with tab_admin:
     if not st.session_state.admin_authenticated:
