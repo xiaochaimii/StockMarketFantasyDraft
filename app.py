@@ -1364,6 +1364,31 @@ except (FileNotFoundError, json.JSONDecodeError):
 
 
 @st.cache_data(ttl=300)
+def _fetch_intraday_prices(tickers):
+    """Fetch today's intraday prices (5-min intervals), batching tickers."""
+    all_frames = []
+    batch_size = 20
+    ticker_list = list(tickers)
+    for i in range(0, len(ticker_list), batch_size):
+        batch = ticker_list[i:i + batch_size]
+        try:
+            data = yf.download(batch, period="1d", interval="5m", auto_adjust=True, progress=False, threads=True)
+            if not data.empty:
+                close = data["Close"]
+                if isinstance(close, pd.Series):
+                    close = close.to_frame(name=batch[0])
+                all_frames.append(close)
+        except Exception:
+            pass
+    if not all_frames:
+        return None
+    result = pd.concat(all_frames, axis=1)
+    # Remove timezone info so it aligns with the tz-naive daily index
+    result.index = result.index.tz_localize(None)
+    return result
+
+
+@st.cache_data(ttl=300)
 def _fetch_live_prices(tickers):
     """Fetch current prices, batching tickers to avoid timeouts."""
     results = {}
@@ -1382,7 +1407,6 @@ def _fetch_live_prices(tickers):
                     if t in row.index and not pd.isna(row[t]):
                         results[t] = row[t]
         except Exception:
-            # Fallback: fetch individually for this batch
             for t in batch:
                 try:
                     tk = yf.Ticker(t)
@@ -1395,7 +1419,7 @@ def _fetch_live_prices(tickers):
 
 
 def fetch_returns(tickers, start, end):
-    """Build returns from pre-fetched JSON data, with live price overlay during market hours."""
+    """Build returns from pre-fetched JSON data, with intraday overlay for today."""
     if not _prefetched or "prices" not in _prefetched:
         return None, None, None
 
@@ -1415,16 +1439,30 @@ def fetch_returns(tickers, start, end):
     if close.empty:
         return None, None, None
 
-    # Always overlay latest prices when JSON data doesn't include today
+    # Overlay intraday data when cached JSON doesn't include today
     today = datetime.date.today()
     if close.index[-1].date() < today:
-        live = _fetch_live_prices(tuple(tickers))
-        if live:
-            live_ts = pd.Timestamp(today)
-            for t, price in live.items():
-                if t in close.columns and not pd.isna(price):
-                    close.loc[live_ts, t] = price
-            close = close.sort_index()
+        intraday = _fetch_intraday_prices(tuple(tickers))
+        if intraday is not None and not intraday.empty:
+            # Keep only columns that exist in historical data
+            shared = [c for c in intraday.columns if c in close.columns]
+            if shared:
+                intra = intraday[shared]
+                # Forward-fill any missing tickers from last known daily close
+                for t in close.columns:
+                    if t not in intra.columns:
+                        intra[t] = close[t].iloc[-1]
+                close = pd.concat([close, intra])
+                close = close[~close.index.duplicated(keep="last")].sort_index()
+        else:
+            # Fallback to single live price point
+            live = _fetch_live_prices(tuple(tickers))
+            if live:
+                live_ts = pd.Timestamp(today)
+                for t, price in live.items():
+                    if t in close.columns and not pd.isna(price):
+                        close.loc[live_ts, t] = price
+                close = close.sort_index()
 
     close = close.ffill().bfill()
     start_prices = close.iloc[0]
