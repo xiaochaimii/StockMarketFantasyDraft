@@ -3971,10 +3971,6 @@ with tab_dashboard:
                 "Stock": stock_cell,
                 "Total Return (%)": total_ret_html,
                 "Price Return (%)": price_ret_html,
-                "RSI": rsi_cell,
-                "SMA Cross": sma_cell,
-                "vs 20d SMA": pv_sma_cell,
-                "Signal": signal_cell,
                 f"Price ({start_date_label} – {end_date_label})": f'${share_price:.2f}<br>→<br>${end_prices[ticker]:.2f}',
                 "Stake": f"${INVESTMENT:.2f}",
                 "Units": f"{shares:.4f}",
@@ -4000,10 +3996,6 @@ with tab_dashboard:
             "Stock": f'<b>{len(final_returns)} stocks</b>',
             "Total Return (%)": format_signed_percent(_total_total_ret).replace('style="color:', 'style="font-weight:700;color:'),
             "Price Return (%)": format_signed_percent(_total_price_ret).replace('style="color:', 'style="font-weight:700;color:'),
-            "RSI": "",
-            "SMA Cross": "",
-            "vs 20d SMA": "",
-            "Signal": "",
             f"Price ({start_date_label} – {end_date_label})": "",
             "Stake": f'<b>${_total_stake:.2f}</b>',
             "Units": "",
@@ -4032,8 +4024,7 @@ with tab_dashboard:
 
 
         # Columns that use their own semantic colors (green/red) — don't override with row gradient
-        _own_color_cols = {"Total Return (%)", "Price Return (%)", "RSI", "SMA Cross",
-                           "vs 20d SMA", "Signal", "Profit/(Loss)", "Mkt Value", "Dividends", "Total Value"}
+        _own_color_cols = {"Total Return (%)", "Price Return (%)", "Profit/(Loss)", "Mkt Value", "Dividends", "Total Value"}
 
         def leaderboard_row_style(row):
             if row.name == total_row_idx:
