@@ -3109,78 +3109,78 @@ with tab_dashboard:
         table_html += '</table>'
         st.markdown(f'<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">{table_html}</div>', unsafe_allow_html=True)
 
-        # --- Market Pulse ---
-        stock_signals = compute_signals(valid_tickers, start_date, end_date)
+        # # --- Market Pulse ---
+        # stock_signals = compute_signals(valid_tickers, start_date, end_date)
 
-        # Compute signal counts for the bar
-        buy_count = sum(1 for s in stock_signals.values() if s["signal"] == "BUY") if stock_signals else 0
-        sell_count = sum(1 for s in stock_signals.values() if s["signal"] == "SELL") if stock_signals else 0
-        hold_count = sum(1 for s in stock_signals.values() if s["signal"] == "HOLD") if stock_signals else 0
-        total_signals = buy_count + sell_count + hold_count
-        buy_pct = int(buy_count / total_signals * 100) if total_signals else 0
-        sell_pct = int(sell_count / total_signals * 100) if total_signals else 0
-        hold_pct = 100 - buy_pct - sell_pct
+        # # Compute signal counts for the bar
+        # buy_count = sum(1 for s in stock_signals.values() if s["signal"] == "BUY") if stock_signals else 0
+        # sell_count = sum(1 for s in stock_signals.values() if s["signal"] == "SELL") if stock_signals else 0
+        # hold_count = sum(1 for s in stock_signals.values() if s["signal"] == "HOLD") if stock_signals else 0
+        # total_signals = buy_count + sell_count + hold_count
+        # buy_pct = int(buy_count / total_signals * 100) if total_signals else 0
+        # sell_pct = int(sell_count / total_signals * 100) if total_signals else 0
+        # hold_pct = 100 - buy_pct - sell_pct
 
-        st.markdown(
-            '<div style="display:flex;align-items:center;gap:0.5rem;margin:1.2rem 0 0.5rem;">'
-            '<span style="font-size:1.3rem;">\U0001f4ca</span>'
-            '<span style="font-size:1.1rem;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;'
-            'color:var(--accent);">Market Pulse</span></div>',
-            unsafe_allow_html=True,
-        )
-        green_count = int((final_returns > 0).sum())
-        red_count = int((final_returns <= 0).sum())
-        total_stocks = len(final_returns)
-        green_pct = int(green_count / total_stocks * 100) if total_stocks else 0
-        avg_return = final_returns.mean()
+        # st.markdown(
+        # '<div style="display:flex;align-items:center;gap:0.5rem;margin:1.2rem 0 0.5rem;">'
+        # '<span style="font-size:1.3rem;">\U0001f4ca</span>'
+        # '<span style="font-size:1.1rem;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;'
+        # 'color:var(--accent);">Market Pulse</span></div>',
+        # unsafe_allow_html=True,
+        # )
+        # green_count = int((final_returns > 0).sum())
+        # red_count = int((final_returns <= 0).sum())
+        # total_stocks = len(final_returns)
+        # green_pct = int(green_count / total_stocks * 100) if total_stocks else 0
+        # avg_return = final_returns.mean()
 
-        # Mood
-        if green_pct >= 70:
-            mood_emoji, mood_text = "\U0001f929", "Rally Mode"
-        elif green_pct >= 55:
-            mood_emoji, mood_text = "\U0001f60e", "Feeling Good"
-        elif green_pct >= 45:
-            mood_emoji, mood_text = "\U0001f610", "Mixed Signals"
-        elif green_pct >= 30:
-            mood_emoji, mood_text = "\U0001f62c", "Getting Rough"
-        else:
-            mood_emoji, mood_text = "\U0001f4a9", "Total Carnage"
+        # # Mood
+        # if green_pct >= 70:
+        # mood_emoji, mood_text = "\U0001f929", "Rally Mode"
+        # elif green_pct >= 55:
+        # mood_emoji, mood_text = "\U0001f60e", "Feeling Good"
+        # elif green_pct >= 45:
+        # mood_emoji, mood_text = "\U0001f610", "Mixed Signals"
+        # elif green_pct >= 30:
+        # mood_emoji, mood_text = "\U0001f62c", "Getting Rough"
+        # else:
+        # mood_emoji, mood_text = "\U0001f4a9", "Total Carnage"
 
-        trading_days = len(returns) - 1 if len(returns) > 1 else 0
+        # trading_days = len(returns) - 1 if len(returns) > 1 else 0
 
-        signal_bar_html = ""
-        if stock_signals:
-            signal_bar_html = (
-                f'<div style="display:flex;border-radius:10px;overflow:hidden;height:34px;margin-top:0.6rem;">'
-                f'<div style="width:{buy_pct}%;background:#19a05f;display:flex;align-items:center;justify-content:center;'
-                f'font-size:clamp(0.6rem,2vw,0.75rem);font-weight:700;color:#fff;padding:0 0.3rem;">{buy_count} BUY</div>'
-                f'<div style="width:{hold_pct}%;background:#d7a83a;display:flex;align-items:center;justify-content:center;'
-                f'font-size:clamp(0.6rem,2vw,0.75rem);font-weight:700;color:#fff;padding:0 0.3rem;">{hold_count} HOLD</div>'
-                f'<div style="width:{sell_pct}%;background:#d14a34;display:flex;align-items:center;justify-content:center;'
-                f'font-size:clamp(0.6rem,2vw,0.75rem);font-weight:700;color:#fff;padding:0 0.3rem;">{sell_count} SELL</div>'
-                f'</div>'
-            )
+        # signal_bar_html = ""
+        # if stock_signals:
+        # signal_bar_html = (
+        # f'<div style="display:flex;border-radius:10px;overflow:hidden;height:34px;margin-top:0.6rem;">'
+        # f'<div style="width:{buy_pct}%;background:#19a05f;display:flex;align-items:center;justify-content:center;'
+        # f'font-size:clamp(0.6rem,2vw,0.75rem);font-weight:700;color:#fff;padding:0 0.3rem;">{buy_count} BUY</div>'
+        # f'<div style="width:{hold_pct}%;background:#d7a83a;display:flex;align-items:center;justify-content:center;'
+        # f'font-size:clamp(0.6rem,2vw,0.75rem);font-weight:700;color:#fff;padding:0 0.3rem;">{hold_count} HOLD</div>'
+        # f'<div style="width:{sell_pct}%;background:#d14a34;display:flex;align-items:center;justify-content:center;'
+        # f'font-size:clamp(0.6rem,2vw,0.75rem);font-weight:700;color:#fff;padding:0 0.3rem;">{sell_count} SELL</div>'
+        # f'</div>'
+        # )
 
-        st.markdown(
-            f'<div class="recap-card" style="padding:1.2rem 1.4rem;text-align:center;">'
-            f'<div style="font-size:2.8rem;line-height:1;margin-bottom:0.3rem;">{mood_emoji}</div>'
-            f'<div style="font-size:1.3rem;font-weight:800;color:#f4f0e3;margin-bottom:0.15rem;">{mood_text}</div>'
-            f'<div style="font-size:0.78rem;opacity:0.65;margin-bottom:0.05rem;">'
-            f'{start_date.strftime("%b %d")} \u2013 {end_date.strftime("%b %d, %Y")}</div>'
-            f'<div style="font-size:0.78rem;opacity:0.65;margin-bottom:0.8rem;">'
-            f'{trading_days} trading days &middot; Avg total return: {avg_return:+.2f}%</div>'
-            f'<div style="display:flex;border-radius:10px;overflow:hidden;height:34px;">'
-            f'<div style="width:{green_pct}%;background:#19a05f;display:flex;align-items:center;justify-content:center;'
-            f'font-size:clamp(0.6rem,2vw,0.75rem);font-weight:700;color:#fff;padding:0 0.4rem;">'
-            f'{green_count} up ({green_pct}%)</div>'
-            f'<div style="width:{100-green_pct}%;background:#d14a34;display:flex;align-items:center;justify-content:center;'
-            f'font-size:clamp(0.6rem,2vw,0.75rem);font-weight:700;color:#fff;padding:0 0.4rem;">'
-            f'{red_count} down ({100-green_pct}%)</div>'
-            f'</div>'
-            f'{signal_bar_html}'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
+        # st.markdown(
+        # f'<div class="recap-card" style="padding:1.2rem 1.4rem;text-align:center;">'
+        # f'<div style="font-size:2.8rem;line-height:1;margin-bottom:0.3rem;">{mood_emoji}</div>'
+        # f'<div style="font-size:1.3rem;font-weight:800;color:#f4f0e3;margin-bottom:0.15rem;">{mood_text}</div>'
+        # f'<div style="font-size:0.78rem;opacity:0.65;margin-bottom:0.05rem;">'
+        # f'{start_date.strftime("%b %d")} \u2013 {end_date.strftime("%b %d, %Y")}</div>'
+        # f'<div style="font-size:0.78rem;opacity:0.65;margin-bottom:0.8rem;">'
+        # f'{trading_days} trading days &middot; Avg total return: {avg_return:+.2f}%</div>'
+        # f'<div style="display:flex;border-radius:10px;overflow:hidden;height:34px;">'
+        # f'<div style="width:{green_pct}%;background:#19a05f;display:flex;align-items:center;justify-content:center;'
+        # f'font-size:clamp(0.6rem,2vw,0.75rem);font-weight:700;color:#fff;padding:0 0.4rem;">'
+        # f'{green_count} up ({green_pct}%)</div>'
+        # f'<div style="width:{100-green_pct}%;background:#d14a34;display:flex;align-items:center;justify-content:center;'
+        # f'font-size:clamp(0.6rem,2vw,0.75rem);font-weight:700;color:#fff;padding:0 0.4rem;">'
+        # f'{red_count} down ({100-green_pct}%)</div>'
+        # f'</div>'
+        # f'{signal_bar_html}'
+        # f'</div>',
+        # unsafe_allow_html=True,
+        # )
 
         # earnings_data already fetched above for bragging rights
 
