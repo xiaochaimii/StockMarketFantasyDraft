@@ -3978,8 +3978,6 @@ with tab_dashboard:
                 "Mkt Value": f'<span style="color:{"#19a05f" if market_value >= INVESTMENT else "#d14a34"};">${market_value:.2f}</span>',
                 "Dividends": f'<span style="color:#19a05f;">${div_income:.2f}</span>' if div_income > 0 else f'${div_income:.2f}',
                 "Total Value": f'<span style="color:{"#19a05f" if final_value >= INVESTMENT else "#d14a34"};">${final_value:.2f}</span>',
-                "Next Earnings": earn_cell,
-                "Est. EPS": eps_col_cell,
             })
 
         # Compute totals for summary row
@@ -4003,8 +4001,6 @@ with tab_dashboard:
             "Mkt Value": f'<b><span style="color:{"#19a05f" if _total_mkt_val >= _total_stake else "#d14a34"};">${_total_mkt_val:.2f}</span></b>',
             "Dividends": f'<b><span style="color:#19a05f;">${_total_divs:.2f}</span></b>' if _total_divs > 0 else f'<b>${_total_divs:.2f}</b>',
             "Total Value": f'<b><span style="color:{"#19a05f" if (_total_mkt_val + _total_divs) >= _total_stake else "#d14a34"};">${_total_mkt_val + _total_divs:.2f}</span></b>',
-            "Next Earnings": "",
-            "Est. EPS": "",
         })
 
         df = pd.DataFrame(rows)
