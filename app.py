@@ -1268,11 +1268,10 @@ st.markdown("""
 .section-gap {
     margin-top: 1.5rem;
 }
-/* Bump chart markers + mobile ranked-list toggle (tagged by JS below) */
-.bump-chart-marker { display: none; }
+/* Bump chart / mobile ranked-list toggle: CSS-only via st.container(key=) */
 .bump-mobile-list { display: none; }
 @media (max-width: 768px) {
-    .bump-chart-hidden-wrap { display: none !important; }
+    .st-key-bump-charts-desktop { display: none !important; }
     .bump-mobile-list {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -3771,8 +3770,6 @@ with tab_dashboard:
                              tickmode="array", tickvals=top_tv, ticktext=top_tt)
 
         chart_config = {"displayModeBar": False, "scrollZoom": False}
-        st.markdown('<div class="bump-chart-marker"></div>', unsafe_allow_html=True)
-        st.plotly_chart(fig_top, use_container_width=True, config=chart_config)
 
         # --- Bump Chart: Bottom 10 Out of the Money ---
         bottom10_returns = returns[bottom10_tickers]
@@ -3791,8 +3788,11 @@ with tab_dashboard:
         fig_bottom.update_yaxes(zeroline=False, fixedrange=True, automargin=True,
                                 tickmode="array", tickvals=bot_tv, ticktext=bot_tt)
 
-        st.markdown('<div class="bump-chart-marker"></div>', unsafe_allow_html=True)
-        st.plotly_chart(fig_bottom, use_container_width=True, config=chart_config)
+        # Wrap both bump charts in a keyed container so CSS can hide the whole
+        # block on mobile (<=768px) in one shot — no JS, no flash-of-chart.
+        with st.container(key="bump-charts-desktop"):
+            st.plotly_chart(fig_top, use_container_width=True, config=chart_config)
+            st.plotly_chart(fig_bottom, use_container_width=True, config=chart_config)
 
         # --- Mobile-only ranked lists (shown instead of bump charts on < 768px) ---
         def _mobile_bump_row(ticker, rank):
@@ -3816,36 +3816,6 @@ with tab_dashboard:
             f'<div class="bump-mobile-card"><div class="bump-mobile-title">Bottom 10 Out of the Money</div>{_bot_rows}</div>'
             '</div>',
             unsafe_allow_html=True,
-        )
-
-        # Tag the bump-chart element containers so CSS can hide them on mobile.
-        # Streamlit's :has() selector matching on the live site wasn't reliable,
-        # so we walk the DOM in JS and add a class directly.
-        components.html(
-            """
-            <script>
-            (function() {
-              const doc = window.parent ? window.parent.document : document;
-              const SEL_CONTAINER = '[data-testid="stElementContainer"], [data-testid="element-container"], .element-container, .stElementContainer';
-              const tag = () => {
-                doc.querySelectorAll('.bump-chart-marker').forEach(m => {
-                  const wrap = m.closest(SEL_CONTAINER);
-                  if (!wrap) return;
-                  wrap.classList.add('bump-chart-hidden-wrap');
-                  const next = wrap.nextElementSibling;
-                  if (next) next.classList.add('bump-chart-hidden-wrap');
-                });
-              };
-              tag();
-              [100, 400, 1200, 3000].forEach(d => setTimeout(tag, d));
-              try {
-                new MutationObserver(tag).observe(doc.body, { childList: true, subtree: true });
-              } catch (e) {}
-            })();
-            </script>
-            """,
-            height=0,
-            width=0,
         )
 
         # --- Throne History (dark timeline style) ---
