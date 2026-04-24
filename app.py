@@ -1268,6 +1268,46 @@ st.markdown("""
 .section-gap {
     margin-top: 1.5rem;
 }
+/* Bump chart markers + mobile ranked-list toggle */
+.bump-chart-marker { display: none; }
+.bump-mobile-list { display: none; }
+@media (max-width: 768px) {
+    div[data-testid="element-container"]:has(.bump-chart-marker),
+    div[data-testid="element-container"]:has(.bump-chart-marker) + div[data-testid="element-container"] {
+        display: none !important;
+    }
+    .bump-mobile-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.55rem;
+        margin-top: 0.4rem;
+        margin-bottom: 0.6rem;
+    }
+    .bump-mobile-card {
+        background: var(--panel-strong);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 0.55rem 0.6rem;
+        box-shadow: 0 4px 12px rgba(82,58,32,0.06);
+    }
+    .bump-mobile-title {
+        font-weight: 800;
+        font-size: 0.72rem;
+        margin-bottom: 0.4rem;
+        color: #102018;
+        letter-spacing: 0.02em;
+    }
+    .bump-mobile-row {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.14rem 0;
+        font-size: 0.72rem;
+        white-space: nowrap;
+    }
+    .bmr-rank { font-weight: 800; }
+    .bmr-ret { margin-left: auto; font-weight: 700; }
+}
 
 </style>
 """, unsafe_allow_html=True)
@@ -3648,7 +3688,8 @@ with tab_dashboard:
                 final_rank = label_rank_fn(final_bump_rank) if label_rank_fn else final_bump_rank
                 final_ret = float(final_returns[ticker])
                 color = colors[i % len(colors)]
-                tick_labels[final_bump_rank] = f"<span style='color:{color}'><b>#{final_rank}</b> {ticker} {final_ret:+.2f}%</span>"
+                etf_em = ETF_EMOJI.get(ETF_MAP.get(ticker, ""), "")
+                tick_labels[final_bump_rank] = f"<span style='color:{color}'><b>#{final_rank}</b> {etf_em} {ticker} {final_ret:+.2f}%</span>"
 
             for i, ticker in enumerate(tickers):
                 rank_vals = ranks_df[ticker].values
@@ -3733,6 +3774,7 @@ with tab_dashboard:
                              tickmode="array", tickvals=top_tv, ticktext=top_tt)
 
         chart_config = {"displayModeBar": False, "scrollZoom": False}
+        st.markdown('<div class="bump-chart-marker"></div>', unsafe_allow_html=True)
         st.plotly_chart(fig_top, use_container_width=True, config=chart_config)
 
         # --- Bump Chart: Bottom 10 Out of the Money ---
@@ -3752,7 +3794,32 @@ with tab_dashboard:
         fig_bottom.update_yaxes(zeroline=False, fixedrange=True, automargin=True,
                                 tickmode="array", tickvals=bot_tv, ticktext=bot_tt)
 
+        st.markdown('<div class="bump-chart-marker"></div>', unsafe_allow_html=True)
         st.plotly_chart(fig_bottom, use_container_width=True, config=chart_config)
+
+        # --- Mobile-only ranked lists (shown instead of bump charts on < 768px) ---
+        def _mobile_bump_row(ticker, rank):
+            _ret = float(final_returns[ticker])
+            _emj = ETF_EMOJI.get(ETF_MAP.get(ticker, ""), "")
+            _rc = "#19a05f" if _ret >= 0 else "#d14a34"
+            return (
+                f'<div class="bump-mobile-row">'
+                f'<span class="bmr-rank">#{rank}</span>'
+                f'<span>{_emj}</span>'
+                f'{_etf_colored(ticker)}'
+                f'<span class="bmr-ret" style="color:{_rc};">{_ret:+.2f}%</span>'
+                f'</div>'
+            )
+
+        _top_rows = "".join(_mobile_bump_row(t, i + 1) for i, t in enumerate(top10_tickers))
+        _bot_rows = "".join(_mobile_bump_row(t, total - 10 + i + 1) for i, t in enumerate(bottom10_tickers))
+        st.markdown(
+            '<div class="bump-mobile-list">'
+            f'<div class="bump-mobile-card"><div class="bump-mobile-title">Top 10 In the Money</div>{_top_rows}</div>'
+            f'<div class="bump-mobile-card"><div class="bump-mobile-title">Bottom 10 Out of the Money</div>{_bot_rows}</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
 
         # --- Throne History (dark timeline style) ---
         def _render_throne(history, icon, title, accent_color, current_ticker, current_name, current_ret, streak):
