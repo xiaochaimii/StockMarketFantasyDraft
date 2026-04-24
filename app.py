@@ -1268,14 +1268,11 @@ st.markdown("""
 .section-gap {
     margin-top: 1.5rem;
 }
-/* Bump chart markers + mobile ranked-list toggle */
+/* Bump chart markers + mobile ranked-list toggle (tagged by JS below) */
 .bump-chart-marker { display: none; }
 .bump-mobile-list { display: none; }
 @media (max-width: 768px) {
-    div[data-testid="element-container"]:has(.bump-chart-marker),
-    div[data-testid="element-container"]:has(.bump-chart-marker) + div[data-testid="element-container"] {
-        display: none !important;
-    }
+    .bump-chart-hidden-wrap { display: none !important; }
     .bump-mobile-list {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -3819,6 +3816,36 @@ with tab_dashboard:
             f'<div class="bump-mobile-card"><div class="bump-mobile-title">Bottom 10 Out of the Money</div>{_bot_rows}</div>'
             '</div>',
             unsafe_allow_html=True,
+        )
+
+        # Tag the bump-chart element containers so CSS can hide them on mobile.
+        # Streamlit's :has() selector matching on the live site wasn't reliable,
+        # so we walk the DOM in JS and add a class directly.
+        components.html(
+            """
+            <script>
+            (function() {
+              const doc = window.parent ? window.parent.document : document;
+              const SEL_CONTAINER = '[data-testid="stElementContainer"], [data-testid="element-container"], .element-container, .stElementContainer';
+              const tag = () => {
+                doc.querySelectorAll('.bump-chart-marker').forEach(m => {
+                  const wrap = m.closest(SEL_CONTAINER);
+                  if (!wrap) return;
+                  wrap.classList.add('bump-chart-hidden-wrap');
+                  const next = wrap.nextElementSibling;
+                  if (next) next.classList.add('bump-chart-hidden-wrap');
+                });
+              };
+              tag();
+              [100, 400, 1200, 3000].forEach(d => setTimeout(tag, d));
+              try {
+                new MutationObserver(tag).observe(doc.body, { childList: true, subtree: true });
+              } catch (e) {}
+            })();
+            </script>
+            """,
+            height=0,
+            width=0,
         )
 
         # --- Throne History (dark timeline style) ---
