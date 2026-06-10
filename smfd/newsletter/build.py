@@ -98,7 +98,7 @@ def _roast_line(laggard: dict, rng: random.Random) -> str:
         f"{t} holders, {pct:+.1f}% isn't a return, it's a cry for help. \U0001f480",
         f"Moment of silence for {t} at {pct:+.1f}%. The diaper bag is holding up better. \U0001f480",
         f"{t} at {pct:+.1f}%. Somewhere a piggy bank is outperforming you. \U0001f437",
-        f"{t}: {pct:+.1f}%. The baby has a better savings rate, and the baby has no income. \U0001f476",
+        f"{t}: {pct:+.1f}%. Alessi has a better savings rate, and she has no income. \U0001f476",
     ]
     return rng.choice(lines)
 
@@ -106,7 +106,7 @@ def _roast_line(laggard: dict, rng: random.Random) -> str:
 def _headline(leader: dict, group_standings: list, movers: list) -> str:
     top_group = group_standings[0] if group_standings else None
     if top_group and top_group["change_vs_last"].startswith("+"):
-        return (f"{GROUP_NAMES.get(top_group['etf'], top_group['etf'])} retook the family lead, "
+        return (f"{GROUP_NAMES.get(top_group['etf'], top_group['etf'])} retook the group lead, "
                 f"powered by {leader['name']}'s {leader['total_return_pct']:+.1f}%.")
     if (movers and movers[0]["period_change_pct"] > 5
             and movers[0]["ticker"] != leader["ticker"]):
@@ -114,7 +114,7 @@ def _headline(leader: dict, group_standings: list, movers: list) -> str:
                 f"while {leader['ticker']} still rules the leaderboard at "
                 f"{leader['total_return_pct']:+.1f}%.")
     if top_group:
-        return (f"{GROUP_NAMES.get(top_group['etf'], top_group['etf'])} holds the family crown and "
+        return (f"{GROUP_NAMES.get(top_group['etf'], top_group['etf'])} holds the group crown and "
                 f"{leader['ticker']} leads the field at {leader['total_return_pct']:+.1f}%.")
     return f"{leader['ticker']} leads at {leader['total_return_pct']:+.1f}%."
 
@@ -131,8 +131,8 @@ def _narrative(snapshot: dict, n_picks: int, rng: random.Random) -> str:
                      f"{m['period_change_pct']:+.1f} pp — somebody's been eating their vegetables.")
     closers = [
         f"With {days} days left, there's plenty of runway for chaos. Keep those picks warm!",
-        f"{days} days to the finish line — anything can happen, and in this family it usually does!",
-        f"Just {days} days until the baby renders final judgment. No pressure, {laggard['ticker']}.",
+        f"{days} days to the finish line — anything can happen, and in this draft it usually does!",
+        f"Just {days} days until Alessi renders final judgment. No pressure, {laggard['ticker']}.",
     ]
     return (
         f"{leader['name']} ({leader['ticker']}) is sitting on the throne at "

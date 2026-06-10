@@ -106,7 +106,7 @@ def render_html(snapshot: dict) -> str:
     <div style="font-size:13px;opacity:0.85;">{_esc(s["period_label"])}</div>
     <div style="font-size:13px;margin-top:10px;background:rgba(255,255,255,0.1);display:inline-block;
                 padding:5px 12px;border-radius:999px;">
-      \U0001f37c <b>{s["days_remaining"]} days</b> until the baby decides it all</div>
+      \U0001f37c <b>{s["days_remaining"]} days</b> until Alessi decides it all</div>
   </td></tr>
 
   {_section("The Headline", f'<div style="font-size:16px;line-height:1.45;font-weight:600;">{_esc(s["headline_stat"])}</div>')}
@@ -114,7 +114,7 @@ def render_html(snapshot: dict) -> str:
   {_section("State of the Pot", f'''
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
     <tr>
-      <td style="font-size:13px;color:{_MUTED};">Family portfolio</td>
+      <td style="font-size:13px;color:{_MUTED};">Draft portfolio</td>
       <td style="font-size:13px;color:{_MUTED};text-align:right;">Dividends collected</td>
     </tr>
     <tr>
@@ -152,11 +152,11 @@ def render_plain_text(snapshot: dict) -> str:
     lines = [
         "STOCK MARKET FANTASY DRAFT — Alessi's Stock Draft",
         s["period_label"],
-        f"{s['days_remaining']} days until the baby decides it all",
+        f"{s['days_remaining']} days until Alessi decides it all",
         "",
         f"THE HEADLINE: {s['headline_stat']}",
         "",
-        f"Family portfolio: ${s['total_value']:,.2f} on ${s['total_invested']:,.0f} invested "
+        f"Draft portfolio: ${s['total_value']:,.2f} on ${s['total_invested']:,.0f} invested "
         f"(dividends collected: ${s['total_dividends']:,.2f})",
         "",
         "GROUP BATTLE",

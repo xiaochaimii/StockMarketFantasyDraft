@@ -4,7 +4,8 @@ A Streamlit app that scores a baby-shower stock-picking game. ~71 guests each
 picked one stock (or commodity ETF); $10 was notionally "invested" in each pick
 on **March 6, 2026**, and the game runs until the baby's first birthday,
 **April 15, 2027** — leader wins, last place gets the punishment. Every pick
-belongs to a family group — **Uncle (UNCL)**, **Auntie (ANTY)**, **Kid (KIDZ)**
+belongs to a group — **Uncle (UNCL)**, **Auntie (ANTY)**, **Kid (KIDZ)**
+(friends are Alessi's honorary Aunties and Uncles; Kids are her peers)
 — so the group meta-game runs alongside individual standings.
 
 ## Scoring (the number that decides who wins)

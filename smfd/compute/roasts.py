@@ -1,4 +1,4 @@
-"""Daily roasts — teasing, never mean. It's family.
+"""Daily roasts — teasing, never mean. These are friends.
 
 Roasts regenerate once per trading day (after the 4 PM close) and persist in
 roasts_cache.json with a 30-day template-dedup history so jokes don't repeat.

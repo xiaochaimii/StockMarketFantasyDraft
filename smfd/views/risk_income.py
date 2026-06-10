@@ -70,14 +70,14 @@ def render(data: GameData, computed: dict):
         total_divs = scores["dividend_income"].sum()
         st.markdown(
             f'<div class="panel-card" style="font-size:0.85rem;">'
-            f'\U0001f4b0 The family has collected <b style="color:#19a05f;">${total_divs:.2f}</b> in dividends '
+            f'\U0001f4b0 The draft has collected <b style="color:#19a05f;">${total_divs:.2f}</b> in dividends '
             f'across {len(payers)} dividend-paying picks. Every cent counts toward the final score.</div>',
             unsafe_allow_html=True,
         )
     else:
         st.info("No dividends collected yet — this crowd picked pure growth.")
 
-    section("\U0001f46a", "Risk by Family Group")
+    section("\U0001f465", "Risk by Group")
     agg = risk.group_risk(table, data.group_map)
     rows = "".join(
         f'<tr><td style="font-weight:700;">{GROUP_EMOJI.get(g, "")} {GROUP_NAMES.get(g, g)}</td>'

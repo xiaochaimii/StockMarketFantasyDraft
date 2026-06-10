@@ -27,7 +27,7 @@ def render(data: GameData, computed: dict):
         f'<div class="panel-card" style="margin-top:0.6rem;">'
         f'<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.6rem;margin-bottom:0.6rem;">'
         f'<div><div style="font-size:1.5rem;font-weight:800;">\U0001f37c {ms["days_remaining"]} days</div>'
-        f'<div style="font-size:0.75rem;color:var(--muted);">until the baby\'s first birthday — '
+        f'<div style="font-size:0.75rem;color:var(--muted);">until Alessi\'s first birthday — '
         f'{ms["end_date"].strftime("%B %d, %Y")}</div></div>'
         f'<div style="text-align:right;"><div style="font-size:1.5rem;font-weight:800;">'
         f'{ms["trading_days_remaining"]}</div>'

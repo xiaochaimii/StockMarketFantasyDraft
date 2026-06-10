@@ -1,4 +1,4 @@
-"""Group Battle: Uncle vs Auntie vs Kid, the family meta-game."""
+"""Group Battle: Aunties vs Uncles vs Kids — the group meta-game."""
 
 from __future__ import annotations
 
@@ -73,7 +73,7 @@ def render(data: GameData, computed: dict):
     st.markdown(
         f'<div class="panel-card" style="margin-top:0.6rem;">'
         f'<span style="font-size:1rem;font-weight:700;">{GROUP_EMOJI.get(leader["etf"], "")} '
-        f'Team {GROUP_NAMES.get(leader["etf"], leader["etf"])} leads the family</span>'
+        f'Team {GROUP_NAMES.get(leader["etf"], leader["etf"])} leads the draft</span>'
         f'<span style="color:var(--muted);font-size:0.85rem;"> — up {leader["avg_return_pct"]:+.2f}% on average, '
         f'{spread:.2f} pp ahead of last place.</span></div>',
         unsafe_allow_html=True,
