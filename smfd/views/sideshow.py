@@ -344,11 +344,17 @@ def _render_roasts(data: GameData, computed: dict, sheets_url: str):
       }}
     }}
     function fitHeight() {{
-      var h = document.querySelector('.chat-container').scrollHeight + 10;
-      if (window.frameElement) window.frameElement.style.height = h + 'px';
+      // Inside a hidden Streamlit tab everything measures 0px — never shrink
+      // below a sane floor or the iframe collapses and stays collapsed.
+      var el = document.querySelector('.chat-container');
+      var h = el ? el.scrollHeight : 0;
+      if (h > 80 && window.frameElement) {{
+        window.frameElement.style.height = (h + 16) + 'px';
+      }}
     }}
-    fitHeight(); window.addEventListener('load', fitHeight);
-    setTimeout(fitHeight, 100); setTimeout(fitHeight, 500);
+    // Re-measure whenever layout actually changes (e.g. the tab becomes visible)
+    new ResizeObserver(fitHeight).observe(document.body);
+    window.addEventListener('load', fitHeight);
     </script></body></html>
     """
     components.html(html, height=len(roasts) * 105 + 60, scrolling=False)
