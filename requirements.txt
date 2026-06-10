@@ -1,4 +1,8 @@
-streamlit
-plotly
-yfinance
-pandas
+# Pinned to the versions the redesign was built and tested against.
+streamlit==1.50.0
+plotly==6.8.0
+yfinance==1.2.0
+pandas==2.3.3
+numpy==2.0.2
+requests>=2.31,<3
+python-dateutil>=2.8,<3

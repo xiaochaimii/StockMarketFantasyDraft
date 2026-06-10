@@ -1,2 +1,8 @@
 .streamlit/secrets.toml
 .data_cache/
+inputs/owners.json
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store

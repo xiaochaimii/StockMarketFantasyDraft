@@ -503,6 +503,62 @@
       "confidence": 50,
       "detail": "Bottom half but gaining +7.86% momentum",
       "return_at_prediction": null
+    },
+    {
+      "recorded_date": "2026-06-10",
+      "title": "Predicted Benchwarmer",
+      "ticker": "ARM",
+      "confidence": 90,
+      "detail": "Dropping -49.24% with 2/5 green days"
+    },
+    {
+      "recorded_date": "2026-06-10",
+      "title": "Danger Zone",
+      "ticker": "ARM",
+      "confidence": 75,
+      "detail": "Dropping -49.24% over 5 days with high volatility"
+    },
+    {
+      "recorded_date": "2026-06-10",
+      "title": "Breakout Watch",
+      "ticker": "INTC",
+      "confidence": 70,
+      "detail": "High volatility (\u00b114.59%) with upward momentum"
+    },
+    {
+      "recorded_date": "2026-06-10",
+      "title": "Volatility Bomb",
+      "ticker": "ARM",
+      "confidence": 70,
+      "detail": "Avg daily swing of \u00b125.69% \u2014 expect fireworks"
+    },
+    {
+      "recorded_date": "2026-06-10",
+      "title": "Sleeper Alert",
+      "ticker": "WMT",
+      "confidence": 50,
+      "detail": "Bottom half but gaining +5.49% momentum"
+    },
+    {
+      "recorded_date": "2026-06-10",
+      "title": "Head of Household",
+      "ticker": "KIDZ",
+      "confidence": 45,
+      "detail": "Avg 5-day momentum: -4.54% across 10 picks"
+    },
+    {
+      "recorded_date": "2026-06-10",
+      "title": "Predicted MVP",
+      "ticker": "LLY",
+      "confidence": 40,
+      "detail": "Strong momentum (+8.60%) + 4/5 green days"
+    },
+    {
+      "recorded_date": "2026-06-10",
+      "title": "Throne Challenger",
+      "ticker": "LLY",
+      "confidence": 27,
+      "detail": "Most likely to dethrone SNDK next week"
     }
   ]
 }
