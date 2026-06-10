@@ -49,7 +49,7 @@ def render(data: GameData, computed: dict):
             f'{group_emoji(leader, data.group_map)} {group_colored(leader, data.group_map)} leads at '
             f'<b style="color:{ret_color(table.loc[leader, "total_return_pct"])};">'
             f'{table.loc[leader, "total_return_pct"]:+.2f}%</b>, with '
-            f'{group_colored(runner_up, data.group_map)} '
+            f'{group_emoji(runner_up, data.group_map)} {group_colored(runner_up, data.group_map)} '
             f'{table.loc[runner_up, "gap_to_leader"]:.2f} pp behind. '
             f'By our generous math, <b>{max(catchers, 0)}</b> of {len(table) - 1} chasers '
             f'could still catch the leader.</div>',
