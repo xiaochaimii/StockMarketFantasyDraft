@@ -81,7 +81,7 @@ def hero(data: GameData, days_left: int):
     # Single-line HTML: indented multiline strings read as markdown code blocks.
     st.markdown(
         '<section class="hero-card">'
-        '<h1 class="hero-title">🧷 No Diaper Change Standings</h1>'
+        '<h1 class="hero-title">🧷 Alessi\'s Stock Draft</h1>'
         '<div class="hero-meta">'
         f'<span class="hero-pill">Window: {window}</span>'
         f'<span class="hero-pill">Stake: ${data.stake:.0f} per pick · {len(data.valid_tickers)} picks</span>'

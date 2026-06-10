@@ -102,7 +102,7 @@ def render_html(snapshot: dict) -> str:
                  border-radius:16px;padding:22px 24px;color:#f4f0e3;">
     <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#d7a83a;">
       \U0001f9f7 Stock Market Fantasy Draft</div>
-    <div style="font-size:24px;font-weight:800;margin:6px 0 4px;">No Diaper Change Standings</div>
+    <div style="font-size:24px;font-weight:800;margin:6px 0 4px;">Alessi's Stock Draft</div>
     <div style="font-size:13px;opacity:0.85;">{_esc(s["period_label"])}</div>
     <div style="font-size:13px;margin-top:10px;background:rgba(255,255,255,0.1);display:inline-block;
                 padding:5px 12px;border-radius:999px;">
@@ -150,7 +150,7 @@ def render_html(snapshot: dict) -> str:
 def render_plain_text(snapshot: dict) -> str:
     s = snapshot
     lines = [
-        "STOCK MARKET FANTASY DRAFT — No Diaper Change Standings",
+        "STOCK MARKET FANTASY DRAFT — Alessi's Stock Draft",
         s["period_label"],
         f"{s['days_remaining']} days until the baby decides it all",
         "",

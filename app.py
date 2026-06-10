@@ -19,7 +19,7 @@ from smfd.views import (admin, common, group_battle, newsletter_view, race_view,
                         risk_income, sideshow, standings)
 from smfd.compute.race import days_remaining
 
-st.set_page_config(page_title="Stock Market Fantasy Draft", layout="wide",
+st.set_page_config(page_title="Alessi's Stock Draft", layout="wide",
                    initial_sidebar_state="collapsed")
 
 common.inject_style()
