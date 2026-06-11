@@ -89,6 +89,13 @@ def render_html(snapshot: dict) -> str:
 
     pl = s["total_value"] - s["total_invested"]
 
+    # The Word arrives as one line per beat — render each as its own paragraph.
+    word_lines = [ln for ln in s["narrative"].split("\n") if ln.strip()]
+    word_html = "".join(
+        f'<div style="font-size:14px;line-height:1.65;'
+        f'margin:0{"" if i == len(word_lines) - 1 else " 0 12px"};">{_esc(ln)}</div>'
+        for i, ln in enumerate(word_lines))
+
     return f"""<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -133,7 +140,7 @@ def render_html(snapshot: dict) -> str:
 
   {_section("Today's Roast", f'<div style="font-size:14px;line-height:1.5;font-style:italic;">{_esc(s["roast"])}</div>')}
 
-  {_section("The Word", f'<div style="font-size:14px;line-height:1.55;">{_esc(s["narrative"])}</div>')}
+  {_section("The Word", word_html)}
 
   <tr><td style="padding:18px 24px;text-align:center;color:{_MUTED};font-size:12px;line-height:1.5;">
     $10 per pick, all notional, zero diapers changed by the market.<br>

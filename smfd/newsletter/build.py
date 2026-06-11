@@ -106,40 +106,50 @@ def _roast_line(laggard: dict, rng: random.Random) -> str:
 def _headline(leader: dict, group_standings: list, movers: list) -> str:
     top_group = group_standings[0] if group_standings else None
     if top_group and top_group["change_vs_last"].startswith("+"):
-        return (f"{GROUP_NAMES.get(top_group['etf'], top_group['etf'])} retook the group lead, "
-                f"powered by {leader['name']}'s {leader['total_return_pct']:+.1f}%.")
+        return (f"\U0001f3c6 {GROUP_NAMES.get(top_group['etf'], top_group['etf'])} retook the "
+                f"group lead, powered by {leader['name']}'s "
+                f"{leader['total_return_pct']:+.1f}%! \U0001f4aa\U0001f525")
     if (movers and movers[0]["period_change_pct"] > 5
             and movers[0]["ticker"] != leader["ticker"]):
-        return (f"{movers[0]['ticker']} went on a {movers[0]['period_change_pct']:+.1f} pp tear, "
-                f"while {leader['ticker']} still rules the leaderboard at "
-                f"{leader['total_return_pct']:+.1f}%.")
+        return (f"\U0001f680 {movers[0]['ticker']} went on a "
+                f"{movers[0]['period_change_pct']:+.1f} pp tear, while \U0001f451 "
+                f"{leader['ticker']} still rules the leaderboard at "
+                f"{leader['total_return_pct']:+.1f}%. \U0001f525")
     if top_group:
-        return (f"{GROUP_NAMES.get(top_group['etf'], top_group['etf'])} holds the group crown and "
-                f"{leader['ticker']} leads the field at {leader['total_return_pct']:+.1f}%.")
-    return f"{leader['ticker']} leads at {leader['total_return_pct']:+.1f}%."
+        return (f"\U0001f451 {GROUP_NAMES.get(top_group['etf'], top_group['etf'])} holds the "
+                f"group crown and \U0001f3c6 {leader['ticker']} leads the field at "
+                f"{leader['total_return_pct']:+.1f}%. \U0001f525")
+    return f"\U0001f451 {leader['ticker']} leads at {leader['total_return_pct']:+.1f}%. \U0001f525"
 
 
 def _narrative(snapshot: dict, n_picks: int, rng: random.Random) -> str:
+    """One line per beat, '\n'-separated — the template renders each as its
+    own paragraph so the email doesn't read as one squished block."""
     leader = snapshot["leader"]
     laggard = snapshot["laggard"]
     days = snapshot["days_remaining"]
     movers = snapshot["top_movers"]
-    mover_bit = ""
+    lines = [
+        f"\U0001f451 {leader['name']} ({leader['ticker']}) is sitting on the throne at "
+        f"{leader['total_return_pct']:+.1f}%.",
+        f"\U0001f4a9 {laggard['name']} ({laggard['ticker']}) is redecorating the basement at "
+        f"{laggard['total_return_pct']:+.1f}%.",
+    ]
     if movers:
         m = movers[0]
-        mover_bit = (f" Biggest mover this period: {m['ticker']} at "
-                     f"{m['period_change_pct']:+.1f} pp — somebody's been eating their vegetables.")
+        lines.append(f"\U0001f680 Biggest mover this period: {m['ticker']} at "
+                     f"{m['period_change_pct']:+.1f} pp — somebody's been eating "
+                     f"their vegetables. \U0001f966")
     closers = [
-        f"With {days} days left, there's plenty of runway for chaos. Keep those picks warm!",
-        f"{days} days to the finish line — anything can happen, and in this draft it usually does!",
-        f"Just {days} days until Alessi renders final judgment. No pressure, {laggard['ticker']}.",
+        f"with {days} days left, there's plenty of runway for chaos. "
+        f"Keep those picks warm! \U0001f525",
+        f"{days} days to the finish line — anything can happen, and in this draft "
+        f"it usually does! \U0001f3a2",
+        f"just {days} days until Alessi renders final judgment. "
+        f"No pressure, {laggard['ticker']}. \U0001f605",
     ]
-    return (
-        f"{leader['name']} ({leader['ticker']}) is sitting on the throne at "
-        f"{leader['total_return_pct']:+.1f}%, while {laggard['name']} ({laggard['ticker']}) is "
-        f"redecorating the basement at {laggard['total_return_pct']:+.1f}%.{mover_bit} "
-        f"All {n_picks} picks are still in it — {rng.choice(closers)}"
-    )
+    lines.append(f"\U0001f4aa All {n_picks} picks are still in it — {rng.choice(closers)}")
+    return "\n".join(lines)
 
 
 def build_snapshot(data: GameData, computed: dict, period: str = "month") -> dict:
