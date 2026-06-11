@@ -33,8 +33,12 @@ dividend-adjusted price series. See `tests/test_returns.py` for the contract.
 | 🏁 **Race to the Finish** | Countdown, gap-to-leader, just-for-fun projections, "still alive?" |
 | 🎢 **Risk & Income** | Volatility, max drawdown, dividend-vs-price return split |
 | 🎪 **Sideshow** | Bragging rights, throne room, daily roasts, predictions, trivia, sectors |
-| 📬 **Newsletter** | Self-contained HTML snapshot — copy into Gmail or download, send yourself |
-| 🔒 **Admin** | Password-gated: owner directory (PII) + roster fixes |
+| 🔒 **Admin** | Password-gated: owners leaderboard (PII), newsletter generator, roster fixes |
+
+The newsletter generator (self-contained HTML snapshot — copy into Gmail or
+download, send yourself) lives **inside the Admin tab**; the email it produces
+is group-safe and never contains owner names. Who-picked-what is visible only
+on the admin-side Owners Leaderboard — the public site shows tickers only.
 
 ## Architecture
 
@@ -44,7 +48,7 @@ smfd/
 ├── config.py             # GAME_START/GAME_END/STAKE/TIMEZONE, paths, groups
 ├── market_calendar.py    # US market holidays, trading days, staleness logic
 ├── data.py               # loads players.json + data/stock_data.json (legacy + v2)
-├── owners.py             # admin owner directory (PII-safe, Sheet-backed)
+├── owners.py             # admin owners leaderboard (PII-safe, Sheet-backed)
 ├── trivia.py
 ├── compute/              # pure functions — no Streamlit anywhere in here
 │   ├── returns.py        # canonical scoring (see above)
@@ -88,7 +92,7 @@ Copy `.streamlit/secrets.toml.example` to `.streamlit/secrets.toml` and fill in:
 - `SHEETS_URL` — the Google Apps Script web-app URL (reactions + owners);
   leave empty to run without it
 - `ADMIN_TOKEN` — must match the `ADMIN_TOKEN` script property in the Apps
-  Script project; gates the owner-directory (PII) actions
+  Script project; gates the owners-leaderboard (PII) actions
 
 ### Google Sheet (optional but recommended)
 
@@ -105,7 +109,9 @@ token, update secrets, done.
   URL/token are Streamlit secrets only.
 - Owner names/emails render **only** inside the password-gated Admin tab,
   are stored in the private Sheet (+ a gitignored local cache), and never
-  appear on the public dashboard or in the public newsletter.
+  appear on the public dashboard or in the newsletter HTML.
+  `tests/test_pii_guard.py` enforces this: no public module may import
+  `smfd.owners`, and the newsletter output must contain no owner fields.
 - If you forked an older version of this repo: the old hardcoded Apps Script
   URL is in git history — redeploy the script (fresh URL) and rotate the
   admin password before going public.

@@ -1,7 +1,9 @@
-"""Newsletter view: pick a period, preview, copy/download, self-send.
+"""Newsletter generator: pick a period, preview, copy/download, self-send.
 
-No email infrastructure — Christina pastes the HTML into Gmail (or forwards the
-downloaded file) herself.
+Renders inside the password-protected Admin tab only (CR-1) — there is no
+public newsletter tab. The generated HTML itself stays group-safe (no owner
+PII). No email infrastructure — Christina pastes the HTML into Gmail (or
+forwards the downloaded file) herself.
 """
 
 from __future__ import annotations
@@ -14,7 +16,6 @@ import streamlit.components.v1 as components
 
 from smfd.data import GameData
 from smfd.newsletter import build, template
-from smfd.views.common import section
 
 
 def _copy_button(label: str, payload: str, key: str):
@@ -99,5 +100,5 @@ def render(data: GameData, computed: dict):
                      f"{datetime.date.today().strftime('%b %d')}.", icon="✅")
             st.rerun()
 
-    section("\U0001f440", "Live Preview", snapshot["period_label"])
-    components.html(html, height=1450, scrolling=True)
+    with st.expander(f"\U0001f440 Live Preview — {snapshot['period_label']}", expanded=False):
+        components.html(html, height=1450, scrolling=True)

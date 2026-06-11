@@ -15,7 +15,7 @@ import streamlit as st
 from smfd.compute import rankings, returns, superlatives
 from smfd.config import STOCK_DATA_PATH
 from smfd.data import load_game_data
-from smfd.views import (admin, common, group_battle, newsletter_view, race_view,
+from smfd.views import (admin, common, group_battle, race_view,
                         risk_income, sideshow, standings)
 from smfd.compute.race import days_remaining
 
@@ -97,9 +97,11 @@ def main():
     window_start = start or data.prices.index[0].date()
     window_end = end or data.prices.index[-1].date()
 
+    # Public tabs only — the newsletter generator lives inside Admin (CR-1),
+    # and owner names render nowhere outside the password gate (CR-2).
     tabs = st.tabs(["\U0001f3c6 Standings", "\U0001f93c Group Battle",
                     "\U0001f3c1 Race to the Finish", "\U0001f3a2 Risk & Income",
-                    "\U0001f3aa Sideshow", "\U0001f4ec Newsletter", "\U0001f512 Admin"])
+                    "\U0001f3aa Sideshow", "\U0001f512 Admin"])
     with tabs[0]:
         standings.render(data, computed, window_start, window_end)
     with tabs[1]:
@@ -111,8 +113,6 @@ def main():
     with tabs[4]:
         sideshow.render(data, computed, sheets_url=_sheets_url())
     with tabs[5]:
-        newsletter_view.render(data, computed)
-    with tabs[6]:
         admin.render(data, computed, sheets_url=_sheets_url())
 
 

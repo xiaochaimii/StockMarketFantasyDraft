@@ -1,4 +1,9 @@
-"""Admin: login, roster management, and the owner directory (PII lives here ONLY)."""
+"""Admin: login, owners leaderboard, newsletter generator, roster management.
+
+PII lives here ONLY — owner names/emails render nowhere outside this view's
+password gate (CR-2), and the newsletter generator moved in from the public
+tabs (CR-1). The generated newsletter HTML itself stays group-safe.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +15,8 @@ import streamlit as st
 from smfd import owners as owners_mod
 from smfd.config import GROUPS, PLAYERS_PATH
 from smfd.data import GameData
-from smfd.views.common import esc, ret_color, section
+from smfd.views import newsletter_view
+from smfd.views.common import esc, fmt_signed_currency, ret_color, section
 
 
 def _secret(key: str) -> str:
@@ -47,9 +53,9 @@ def _login():
                     st.error("Incorrect credentials.")
 
 
-def _owner_directory(data: GameData, computed: dict, sheets_url: str):
-    section("\U0001f4c7", "Owner Directory",
-            "admin-only — never shown on the public dashboard")
+def _owners_leaderboard(data: GameData, computed: dict, sheets_url: str):
+    section("\U0001f4c7", "Owners Leaderboard",
+            "who picked what, ranked — admin-only, never shown on the public dashboard")
     admin_token = _secret("ADMIN_TOKEN")
     owners, source = owners_mod.load_owners(sheets_url, admin_token)
 
@@ -101,23 +107,27 @@ def _owner_directory(data: GameData, computed: dict, sheets_url: str):
         owner_email = esc(o.get("owner_email", "")) or blank
         rows += (
             f'<tr><td>{rank}</td>'
+            f'<td><b>{owner_name}</b></td>'
             f'<td><b>{esc(t)}</b> <span style="color:var(--muted);font-size:0.75rem;">{esc(row["name"])}</span></td>'
             f'<td>{esc(row["group"])}</td>'
             f'<td style="color:{ret_color(row["total_return_pct"])};font-weight:700;">{row["total_return_pct"]:+.2f}%</td>'
-            f'<td>{owner_name}</td>'
+            f'<td style="color:{ret_color(row["price_return_pct"])};">{row["price_return_pct"]:+.2f}%</td>'
+            f'<td>{fmt_signed_currency(row["profit"])}</td>'
+            f'<td style="color:{ret_color(row["profit"])};">${row["total_value"]:.2f}</td>'
             f'<td>{owner_email}</td></tr>'
         )
     st.markdown(f"**{recorded} of {len(scores)} picks** have an owner recorded.")
     st.markdown(
         '<div style="overflow-x:auto;max-height:480px;overflow-y:auto;border-radius:14px;'
         'border:1px solid var(--border);background:var(--panel-strong);">'
-        '<table style="width:100%;min-width:640px;border-collapse:separate;border-spacing:0;font-size:0.8rem;">'
+        '<table style="width:100%;min-width:760px;border-collapse:separate;border-spacing:0;font-size:0.8rem;">'
         '<tr>'
         + "".join(
             f'<th style="text-align:left;padding:9px 8px;background:linear-gradient(90deg,#0d2f20,#13492f);'
             f'color:#f4f0e3;font-size:0.68rem;font-weight:700;text-transform:uppercase;'
-            f'position:sticky;top:0;">{h}</th>'
-            for h in ["#", "Pick", "Group", "Return", "Owner", "Email"])
+            f'position:sticky;top:0;white-space:nowrap;">{h}</th>'
+            for h in ["#", "Owner", "Pick", "Group", "Total Return", "Price Return",
+                      "Profit/(Loss)", "Total Value", "Email"])
         + f'</tr>{rows}</table></div>',
         unsafe_allow_html=True,
     )
@@ -169,7 +179,10 @@ def render(data: GameData, computed: dict, sheets_url: str = ""):
         _login()
         return
 
-    _owner_directory(data, computed, sheets_url)
+    _owners_leaderboard(data, computed, sheets_url)
+    st.divider()
+    section("\U0001f4ec", "Newsletter", "generate + self-send — the email itself stays group-safe (no names)")
+    newsletter_view.render(data, computed)
     st.divider()
     _roster_management(data)
     st.divider()
