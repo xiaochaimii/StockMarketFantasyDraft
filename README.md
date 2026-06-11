@@ -8,6 +8,10 @@ belongs to a group — **Uncle (UNCL)**, **Auntie (ANTY)**, **Kid (KIDZ)**
 (friends are Alessi's honorary Aunties and Uncles; Kids are her peers)
 — so the group meta-game runs alongside individual standings.
 
+With thanks to [xiaochaimii](https://share.streamlit.io/user/xiaochaimii),
+who built the original version of this site — and is competing in the draft
+as an Auntie.
+
 ## Scoring (the number that decides who wins)
 
 For each pick, on **split-adjusted** prices:

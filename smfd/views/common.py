@@ -92,6 +92,20 @@ def hero(data: GameData, days_left: int):
     )
 
 
+def footer():
+    """Public credit to the original builder (an Auntie competing in the draft)."""
+    st.markdown(
+        '<div style="text-align:center;margin:2.4rem 0 0.6rem;font-size:0.75rem;color:var(--muted);">'
+        '\U0001f64f With thanks to '
+        '<a href="https://share.streamlit.io/user/xiaochaimii" target="_blank" rel="noopener" '
+        'style="color:var(--accent);font-weight:700;">xiaochaimii</a>, '
+        'who built the original Stock Draft this site grew out of — '
+        'and is competing in it as an Auntie \U0001f469\U0001f3fb'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+
 def stale_banner(data: GameData):
     """Dismissible honesty banner when the nightly fetch hiccuped."""
     if st.session_state.get("stale_banner_dismissed"):

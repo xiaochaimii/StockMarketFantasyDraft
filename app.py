@@ -115,5 +115,7 @@ def main():
     with tabs[5]:
         admin.render(data, computed, sheets_url=_sheets_url())
 
+    common.footer()
+
 
 main()
