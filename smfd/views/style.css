@@ -53,7 +53,36 @@ h1, h2, h3 { color: var(--text); letter-spacing: -0.03em; }
     font-size: 0.9rem;
 }
 @media (max-width: 768px) {
-    .stTabs [data-baseweb="tab-list"] { gap: 0.9rem; }
+    .stTabs [data-baseweb="tab-list"] { gap: 0.15rem 0.9rem; }
+    /* The sliding underline positions itself for a single-row tab list and
+       lands under the wrong tab once the list wraps — replace it with a pill
+       on the selected tab. */
+    .stTabs [data-baseweb="tab-highlight"] { display: none; }
+    .stTabs button[role="tab"] { padding: 0.25rem 0.55rem; border-radius: 999px; }
+    .stTabs button[role="tab"][aria-selected="true"] {
+        background: rgba(14, 95, 58, 0.12);
+        box-shadow: inset 0 0 0 1.5px rgba(14, 95, 58, 0.35);
+    }
+}
+
+/* --- Bragging Rights grid --- */
+.badge-grid2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.55rem;
+}
+.badge-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    background: linear-gradient(180deg, rgba(251,253,250,0.98), rgba(237,245,238,0.95));
+    border: 1px solid rgba(18, 51, 36, 0.12);
+    border-radius: 14px;
+    padding: 0.7rem 0.9rem;
+    box-shadow: 0 4px 14px rgba(14, 95, 58, 0.05);
+}
+@media (max-width: 768px) {
+    .badge-grid2 { grid-template-columns: 1fr; }
 }
 .stTabs [data-baseweb="tab-highlight"] { background-color: var(--accent); }
 

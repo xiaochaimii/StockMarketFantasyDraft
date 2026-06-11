@@ -26,7 +26,10 @@ common.inject_style()
 
 
 def _sheets_url() -> str:
-    return st.secrets.get("SHEETS_URL", "")
+    try:
+        return st.secrets.get("SHEETS_URL", "")
+    except Exception:  # no secrets file at all (e.g. fresh local checkout)
+        return ""
 
 
 @st.cache_data(ttl=900, show_spinner=False)

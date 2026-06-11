@@ -119,7 +119,7 @@ def render_html(snapshot: dict) -> str:
     </tr>
     <tr>
       <td style="font-size:20px;font-weight:800;color:{_GREEN if pl >= 0 else _RED};">${s["total_value"]:,.2f}
-        <span style="font-size:12px;font-weight:400;color:{_MUTED};">on ${s["total_invested"]:,.0f} in</span></td>
+        <span style="font-size:12px;font-weight:400;color:{_MUTED};white-space:nowrap;">on ${s["total_invested"]:,.0f}&nbsp;invested</span></td>
       <td style="font-size:20px;font-weight:800;text-align:right;color:{_GOLD};">${s["total_dividends"]:,.2f}</td>
     </tr></table>''')}
 

@@ -13,12 +13,19 @@ from smfd.data import GameData
 from smfd.views.common import esc, ret_color, section
 
 
+def _secret(key: str) -> str:
+    try:
+        return st.secrets.get(key, "")
+    except Exception:  # no secrets file at all (e.g. fresh local checkout)
+        return ""
+
+
 def _password_ok(password: str) -> bool:
     """Prefer a SHA-256 hash in secrets; fall back to plaintext for compatibility."""
-    stored_hash = st.secrets.get("ADMIN_PASSWORD_SHA256", "")
+    stored_hash = _secret("ADMIN_PASSWORD_SHA256")
     if stored_hash:
         return hashlib.sha256(password.encode()).hexdigest() == stored_hash.lower()
-    stored = st.secrets.get("ADMIN_PASSWORD", "")
+    stored = _secret("ADMIN_PASSWORD")
     return bool(stored) and password == stored
 
 
@@ -33,7 +40,7 @@ def _login():
                                      label_visibility="collapsed",
                                      placeholder="Enter admin password")
             if st.form_submit_button("Login", width="stretch"):
-                if userid == st.secrets.get("ADMIN_USERNAME", "") and _password_ok(password):
+                if userid and userid == _secret("ADMIN_USERNAME") and _password_ok(password):
                     st.session_state.admin_authenticated = True
                     st.rerun()
                 else:
@@ -43,7 +50,7 @@ def _login():
 def _owner_directory(data: GameData, computed: dict, sheets_url: str):
     section("\U0001f4c7", "Owner Directory",
             "admin-only — never shown on the public dashboard")
-    admin_token = st.secrets.get("ADMIN_TOKEN", "")
+    admin_token = _secret("ADMIN_TOKEN")
     owners, source = owners_mod.load_owners(sheets_url, admin_token)
 
     if source == "sheet":

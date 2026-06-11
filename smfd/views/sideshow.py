@@ -149,8 +149,7 @@ def _render_badges(badges_data: list, data: GameData):
         tone = _BADGE_TONES.get(name, "green")
         bg_from, bg_to, shadow = _TONE_STYLES[tone]
         return (
-            f'<td style="padding:0.85rem 1.2rem;vertical-align:middle;">'
-            f'<div style="display:flex;align-items:center;gap:0.9rem;">'
+            f'<div class="badge-cell">'
             f'<div style="width:42px;height:42px;border-radius:12px;'
             f'background:linear-gradient(135deg,{bg_from},{bg_to});display:flex;align-items:center;'
             f'justify-content:center;flex-shrink:0;box-shadow:0 2px 6px {shadow};">'
@@ -159,7 +158,7 @@ def _render_badges(badges_data: list, data: GameData):
             f'<div style="font-size:0.78rem;color:#2d4a3a;margin-top:0.1rem;">'
             f'{_color_tickers(holder, data.group_map)}</div>'
             f'<div style="font-size:0.62rem;color:#5d6f65;opacity:0.8;margin-top:0.1rem;">{esc(desc)}</div>'
-            f'</div></div></td>'
+            f'</div></div>'
         )
 
     # Multi-award bar
@@ -185,22 +184,8 @@ def _render_badges(badges_data: list, data: GameData):
             unsafe_allow_html=True,
         )
 
-    rows = ""
-    for i in range(0, len(badges_data), 2):
-        left = badges_data[i]
-        right = badges_data[i + 1] if i + 1 < len(badges_data) else None
-        rows += "<tr>" + cell(*left)
-        if right:
-            rows += ('<td style="width:1px;padding:0;"><div style="width:1px;height:100%;'
-                     'background:rgba(18,51,36,0.08);"></div></td>') + cell(*right)
-        rows += "</tr>"
-    st.markdown(
-        f'<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">'
-        f'<table style="width:100%;border-collapse:separate;border-spacing:0;border-radius:18px;'
-        f'overflow:hidden;background:linear-gradient(180deg,rgba(251,253,250,0.98),rgba(237,245,238,0.95));'
-        f'border:1px solid rgba(18,51,36,0.12);box-shadow:0 8px 32px rgba(14,95,58,0.06);">{rows}</table></div>',
-        unsafe_allow_html=True,
-    )
+    cells = "".join(cell(*b) for b in badges_data)
+    st.markdown(f'<div class="badge-grid2">{cells}</div>', unsafe_allow_html=True)
 
 
 def _render_throne(history: list, icon: str, title: str, data: GameData,
@@ -348,8 +333,15 @@ def _render_roasts(data: GameData, computed: dict, sheets_url: str):
       // below a sane floor or the iframe collapses and stays collapsed.
       var el = document.querySelector('.chat-container');
       var h = el ? el.scrollHeight : 0;
-      if (h > 80 && window.frameElement) {{
-        window.frameElement.style.height = (h + 16) + 'px';
+      var frame = window.frameElement;
+      if (h > 80 && frame) {{
+        frame.style.height = (h + 16) + 'px';
+        frame.setAttribute('height', h + 16);
+        // Streamlit pins the wrapper (stElementContainer) to the original
+        // height param via a stylesheet class — free it so it follows the
+        // iframe instead of letting the chat overlap the next section.
+        var p = frame.parentElement;
+        if (p) p.style.height = 'auto';
       }}
     }}
     // Re-measure whenever layout actually changes (e.g. the tab becomes visible)
@@ -455,7 +447,7 @@ def render(data: GameData, computed: dict, sheets_url: str = ""):
     with cols[1]:
         st.markdown(
             f'<div class="trivia-card"><div class="trivia-label">Did you know?</div>'
-            f'<div class="trivia-text">{esc(trivia.get_generic_trivia())}</div></div>',
+            f'<div class="trivia-text">{esc(trivia.get_generic_trivia(offset=1))}</div></div>',
             unsafe_allow_html=True)
 
     section("\U0001f5fa", "Sector Scoreboard")

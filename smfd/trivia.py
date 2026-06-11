@@ -112,6 +112,8 @@ def get_daily_trivia(ticker: str) -> str | None:
     return facts[int(seed, 16) % len(facts)]
 
 
-def get_generic_trivia() -> str:
+def get_generic_trivia(offset: int = 0) -> str:
+    """Daily-rotating market fact; *offset* selects a different fact for the
+    same day (so two cards never show the same one)."""
     seed = hashlib.md5(datetime.date.today().isoformat().encode()).hexdigest()
-    return GENERIC_TRIVIA[int(seed, 16) % len(GENERIC_TRIVIA)]
+    return GENERIC_TRIVIA[(int(seed, 16) + offset) % len(GENERIC_TRIVIA)]

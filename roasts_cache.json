@@ -1,14 +1,14 @@
 {
-  "date": "2026-06-09",
+  "date": "2026-06-10",
   "roasts": [
-    "\ud83d\udc51 <span style=\"color:#3b82f6;font-weight:700;\">CIFR</span> is up +78.34% and won't shut up about it. We get it, you're winning.",
-    "\ud83d\udd34 <span style=\"color:#eab308;font-weight:700;\">NTDOY</span> down -9.47%. Not great, not terrible. Actually, it's terrible.",
-    "\ud83d\udc51 <span style=\"color:#a855f7;font-weight:700;\">TER</span> at +37.32%? Enjoy it while it lasts. The market humbles everyone.",
-    "\ud83d\udc51 Someone check on <span style=\"color:#3b82f6;font-weight:700;\">LRCX</span>'s ego. +62.77% and counting. Insufferable.",
-    "\ud83d\udc51 <span style=\"color:#a855f7;font-weight:700;\">MU</span> sitting pretty at +156.50%. Main character energy.",
-    "\ud83e\udee5 <span style=\"color:#a855f7;font-weight:700;\">ALK</span> at -0.14%. The human equivalent of 'I'm just here so I don't get fined.'",
-    "\ud83d\udd34 <span style=\"color:#a855f7;font-weight:700;\">DASH</span> returning -14.89%. Underperforming a savings account. Impressive.",
-    "\ud83c\udfa2 <span style=\"color:#3b82f6;font-weight:700;\">PANW</span> nosedived -10.15% in one day. That's bungee jumping without the cord."
+    "\ud83d\udc51 <span style=\"color:#3b82f6;font-weight:700;\">TSM</span> sitting pretty at +22.29%. Main character energy.",
+    "\ud83d\udd34 <span style=\"color:#a855f7;font-weight:700;\">TYGO</span> returning -9.50%. Underperforming a savings account. Impressive.",
+    "\ud83d\udc51 Someone check on <span style=\"color:#3b82f6;font-weight:700;\">INTC</span>'s ego. +146.08% and counting. Insufferable.",
+    "\ud83c\udfa2 <span style=\"color:#a855f7;font-weight:700;\">MU</span> dropped -35.64% in a single day. Somewhere a stop-loss is crying.",
+    "\ud83d\udca9 Moment of silence for <span style=\"color:#3b82f6;font-weight:700;\">RBLX</span> at -33.76%. You didn't have to go this hard\u2026 in the wrong direction.",
+    "\ud83d\udc51 <span style=\"color:#a855f7;font-weight:700;\">AMD</span> is up +137.20% and won't shut up about it. We get it, you're winning.",
+    "\ud83d\udc51 <span style=\"color:#a855f7;font-weight:700;\">ARM</span> at +171.59%? Enjoy it while it lasts. The market humbles everyone.",
+    "\ud83e\udee5 <span style=\"color:#3b82f6;font-weight:700;\">RIVN</span> at -1.66%. The human equivalent of 'I'm just here so I don't get fined.'"
   ],
   "used": {
     "2026-04-06": [
@@ -60,6 +60,16 @@
       "\ud83e\udee5 ALK at -0.14%. The human equivalent of 'I'm just here so I don't get fined.'",
       "\ud83d\udd34 DASH returning -14.89%. Underperforming a savings account. Impressive.",
       "\ud83c\udfa2 PANW nosedived -10.15% in one day. That's bungee jumping without the cord."
+    ],
+    "2026-06-10": [
+      "\ud83d\udc51 TSM sitting pretty at +22.29%. Main character energy.",
+      "\ud83d\udd34 TYGO returning -9.50%. Underperforming a savings account. Impressive.",
+      "\ud83d\udc51 Someone check on INTC's ego. +146.08% and counting. Insufferable.",
+      "\ud83c\udfa2 MU dropped -35.64% in a single day. Somewhere a stop-loss is crying.",
+      "\ud83d\udca9 Moment of silence for RBLX at -33.76%. You didn't have to go this hard\u2026 in the",
+      "\ud83d\udc51 AMD is up +137.20% and won't shut up about it. We get it, you're winning.",
+      "\ud83d\udc51 ARM at +171.59%? Enjoy it while it lasts. The market humbles everyone.",
+      "\ud83e\udee5 RIVN at -1.66%. The human equivalent of 'I'm just here so I don't get fined.'"
     ]
   }
 }

@@ -138,13 +138,15 @@ def gap_to_leader_chart(race: pd.DataFrame, group_map: dict, top_n: int = 15) ->
         hovertemplate="%{y}: %{x:.2f} pp behind (at %{customdata[0]:.2f}%)<extra></extra>",
         text=[f"-{v:.1f} pp" for v in chasers["gap_to_leader"]],
         textposition="outside", textfont=dict(size=11),
+        cliponaxis=False,  # outside labels must not clip at the plot edge
     ))
+    layout = {**BASE_LAYOUT, "margin": dict(t=50, r=58, b=40, l=14)}
     fig.update_layout(
         height=max(330, 28 * len(chasers) + 90),
         xaxis=dict(title="Percentage points behind the leader", gridcolor=GRID,
                    fixedrange=True),
         yaxis=dict(fixedrange=True, tickfont=dict(size=12)),
-        **BASE_LAYOUT,
+        **layout,
     )
     return fig
 
